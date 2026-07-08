@@ -76,17 +76,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cleanlink – Đặt lịch dọn dẹp vệ sinh nhà, văn phòng" },
+      { title: "Cleanlink – Đặt lịch dọn dẹp dễ dàng, nhà sạch chỉ sau vài giờ" },
       {
         name: "description",
         content:
-          "Cleanlink giúp bạn đặt lịch dọn dẹp nhà theo giờ, tổng vệ sinh, vệ sinh văn phòng nhanh chóng với cộng tác viên được xác minh, giá minh bạch.",
+          "Cleanlink kết nối bạn với cộng tác viên vệ sinh đã được xác minh. Đặt lịch dọn dẹp nhà theo giờ, tổng vệ sinh, vệ sinh văn phòng chỉ trong 60 giây.",
       },
       { name: "keywords", content: "dịch vụ dọn dẹp nhà, đặt lịch dọn dẹp, dọn dẹp theo giờ, tổng vệ sinh nhà, vệ sinh văn phòng, Cleanlink" },
-      { property: "og:title", content: "Cleanlink – Đặt lịch dọn dẹp dễ dàng" },
-      { property: "og:description", content: "Nhà sạch chỉ sau vài giờ. Cộng tác viên được xác minh, giá minh bạch, đặt lịch trong 60 giây." },
+      { property: "og:title", content: "Cleanlink – Đặt lịch dọn dẹp dễ dàng, nhà sạch chỉ sau vài giờ" },
+      { property: "og:description", content: "Cleanlink kết nối bạn với cộng tác viên vệ sinh đã được xác minh. Đặt lịch dọn dẹp nhà theo giờ, tổng vệ sinh, vệ sinh văn phòng chỉ trong 60 giây." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Cleanlink – Đặt lịch dọn dẹp dễ dàng, nhà sạch chỉ sau vài giờ" },
+      { name: "twitter:description", content: "Cleanlink kết nối bạn với cộng tác viên vệ sinh đã được xác minh. Đặt lịch dọn dẹp nhà theo giờ, tổng vệ sinh, vệ sinh văn phòng chỉ trong 60 giây." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/743b0ed4-b803-477b-b163-24fc85ce8bd9/id-preview-3bf08b27--8755f2b4-3e91-4add-b278-6cea9f0105c6.lovable.app-1783506208058.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/743b0ed4-b803-477b-b163-24fc85ce8bd9/id-preview-3bf08b27--8755f2b4-3e91-4add-b278-6cea9f0105c6.lovable.app-1783506208058.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
