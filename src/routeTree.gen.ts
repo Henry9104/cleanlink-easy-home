@@ -9,8 +9,62 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as QuyTrinhRouteImport } from './routes/quy-trinh'
+import { Route as LienHeRouteImport } from './routes/lien-he'
+import { Route as GioiThieuRouteImport } from './routes/gioi-thieu'
+import { Route as DichVuRouteImport } from './routes/dich-vu'
+import { Route as DatLichRouteImport } from './routes/dat-lich'
+import { Route as DanhGiaRouteImport } from './routes/danh-gia'
+import { Route as CongTacVienRouteImport } from './routes/cong-tac-vien'
+import { Route as BangGiaRouteImport } from './routes/bang-gia'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
+const QuyTrinhRoute = QuyTrinhRouteImport.update({
+  id: '/quy-trinh',
+  path: '/quy-trinh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LienHeRoute = LienHeRouteImport.update({
+  id: '/lien-he',
+  path: '/lien-he',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GioiThieuRoute = GioiThieuRouteImport.update({
+  id: '/gioi-thieu',
+  path: '/gioi-thieu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DichVuRoute = DichVuRouteImport.update({
+  id: '/dich-vu',
+  path: '/dich-vu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DatLichRoute = DatLichRouteImport.update({
+  id: '/dat-lich',
+  path: '/dat-lich',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DanhGiaRoute = DanhGiaRouteImport.update({
+  id: '/danh-gia',
+  path: '/danh-gia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CongTacVienRoute = CongTacVienRouteImport.update({
+  id: '/cong-tac-vien',
+  path: '/cong-tac-vien',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BangGiaRoute = BangGiaRouteImport.update({
+  id: '/bang-gia',
+  path: '/bang-gia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +73,158 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/bang-gia': typeof BangGiaRoute
+  '/cong-tac-vien': typeof CongTacVienRoute
+  '/danh-gia': typeof DanhGiaRoute
+  '/dat-lich': typeof DatLichRoute
+  '/dich-vu': typeof DichVuRoute
+  '/gioi-thieu': typeof GioiThieuRoute
+  '/lien-he': typeof LienHeRoute
+  '/quy-trinh': typeof QuyTrinhRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/bang-gia': typeof BangGiaRoute
+  '/cong-tac-vien': typeof CongTacVienRoute
+  '/danh-gia': typeof DanhGiaRoute
+  '/dat-lich': typeof DatLichRoute
+  '/dich-vu': typeof DichVuRoute
+  '/gioi-thieu': typeof GioiThieuRoute
+  '/lien-he': typeof LienHeRoute
+  '/quy-trinh': typeof QuyTrinhRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/bang-gia': typeof BangGiaRoute
+  '/cong-tac-vien': typeof CongTacVienRoute
+  '/danh-gia': typeof DanhGiaRoute
+  '/dat-lich': typeof DatLichRoute
+  '/dich-vu': typeof DichVuRoute
+  '/gioi-thieu': typeof GioiThieuRoute
+  '/lien-he': typeof LienHeRoute
+  '/quy-trinh': typeof QuyTrinhRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/bang-gia'
+    | '/cong-tac-vien'
+    | '/danh-gia'
+    | '/dat-lich'
+    | '/dich-vu'
+    | '/gioi-thieu'
+    | '/lien-he'
+    | '/quy-trinh'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/bang-gia'
+    | '/cong-tac-vien'
+    | '/danh-gia'
+    | '/dat-lich'
+    | '/dich-vu'
+    | '/gioi-thieu'
+    | '/lien-he'
+    | '/quy-trinh'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/bang-gia'
+    | '/cong-tac-vien'
+    | '/danh-gia'
+    | '/dat-lich'
+    | '/dich-vu'
+    | '/gioi-thieu'
+    | '/lien-he'
+    | '/quy-trinh'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  BangGiaRoute: typeof BangGiaRoute
+  CongTacVienRoute: typeof CongTacVienRoute
+  DanhGiaRoute: typeof DanhGiaRoute
+  DatLichRoute: typeof DatLichRoute
+  DichVuRoute: typeof DichVuRoute
+  GioiThieuRoute: typeof GioiThieuRoute
+  LienHeRoute: typeof LienHeRoute
+  QuyTrinhRoute: typeof QuyTrinhRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/quy-trinh': {
+      id: '/quy-trinh'
+      path: '/quy-trinh'
+      fullPath: '/quy-trinh'
+      preLoaderRoute: typeof QuyTrinhRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lien-he': {
+      id: '/lien-he'
+      path: '/lien-he'
+      fullPath: '/lien-he'
+      preLoaderRoute: typeof LienHeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gioi-thieu': {
+      id: '/gioi-thieu'
+      path: '/gioi-thieu'
+      fullPath: '/gioi-thieu'
+      preLoaderRoute: typeof GioiThieuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dich-vu': {
+      id: '/dich-vu'
+      path: '/dich-vu'
+      fullPath: '/dich-vu'
+      preLoaderRoute: typeof DichVuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dat-lich': {
+      id: '/dat-lich'
+      path: '/dat-lich'
+      fullPath: '/dat-lich'
+      preLoaderRoute: typeof DatLichRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/danh-gia': {
+      id: '/danh-gia'
+      path: '/danh-gia'
+      fullPath: '/danh-gia'
+      preLoaderRoute: typeof DanhGiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cong-tac-vien': {
+      id: '/cong-tac-vien'
+      path: '/cong-tac-vien'
+      fullPath: '/cong-tac-vien'
+      preLoaderRoute: typeof CongTacVienRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bang-gia': {
+      id: '/bang-gia'
+      path: '/bang-gia'
+      fullPath: '/bang-gia'
+      preLoaderRoute: typeof BangGiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +237,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  BangGiaRoute: BangGiaRoute,
+  CongTacVienRoute: CongTacVienRoute,
+  DanhGiaRoute: DanhGiaRoute,
+  DatLichRoute: DatLichRoute,
+  DichVuRoute: DichVuRoute,
+  GioiThieuRoute: GioiThieuRoute,
+  LienHeRoute: LienHeRoute,
+  QuyTrinhRoute: QuyTrinhRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
