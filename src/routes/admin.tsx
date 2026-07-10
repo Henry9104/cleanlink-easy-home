@@ -9,213 +9,132 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { useEffect, useState } from "react";
-import {
-  getBookings,
-  getPartners,
-  updateBookingStatus,
+  sampleBookings,
   statusLabel,
+  statusColor,
+  formatVND,
+  areas,
+  timeSlots,
+  labelFrom,
   services,
-  type Booking,
-  type Partner,
 } from "@/lib/cleanlink-data";
+import {
+  ClipboardList,
+  Clock,
+  PlayCircle,
+  CheckCircle2,
+  Users,
+  Star,
+  Wallet,
+} from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Quản trị – Cleanlink" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Quản trị – CleanLink" }, { name: "robots", content: "noindex" }] }),
   component: AdminPage,
 });
 
-const statusColor: Record<Booking["status"], string> = {
-  pending: "bg-amber-100 text-amber-800",
-  confirmed: "bg-sky-100 text-sky-800",
-  in_progress: "bg-blue-100 text-blue-800",
-  done: "bg-emerald-100 text-emerald-800",
-  cancelled: "bg-rose-100 text-rose-800",
-};
+const stats = [
+  { icon: ClipboardList, label: "Đơn hôm nay", value: "12", tint: "bg-sky/60 text-sky-foreground" },
+  { icon: Clock, label: "Đang chờ người dọn", value: "3", tint: "bg-amber-100 text-amber-700" },
+  { icon: PlayCircle, label: "Đang thực hiện", value: "2", tint: "bg-indigo-100 text-indigo-700" },
+  { icon: CheckCircle2, label: "Đã hoàn thành", value: "8", tint: "bg-mint/60 text-mint-foreground" },
+  { icon: Users, label: "Người dọn hoạt động", value: "18", tint: "bg-primary/10 text-primary" },
+  { icon: Star, label: "Đánh giá trung bình", value: "4.8/5", tint: "bg-yellow-100 text-yellow-700" },
+  { icon: Wallet, label: "Doanh thu hôm nay", value: "4.250.000đ", tint: "bg-emerald-100 text-emerald-700" },
+];
 
 function AdminPage() {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
-
-  function refresh() {
-    setBookings(getBookings());
-    setPartners(getPartners());
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  function changeStatus(id: string, status: Booking["status"]) {
-    updateBookingStatus(id, status);
-    refresh();
-  }
-
-  const stats = {
-    total: bookings.length,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    inProgress: bookings.filter((b) => b.status === "in_progress" || b.status === "confirmed").length,
-    done: bookings.filter((b) => b.status === "done").length,
-  };
-
   return (
     <SiteLayout>
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-12">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Bảng điều khiển</h1>
-            <p className="text-muted-foreground text-sm mt-1">Quản lý lịch đặt, cộng tác viên và dịch vụ Cleanlink.</p>
+            <h1 className="text-3xl font-bold">Bảng điều khiển CleanLink</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Điều phối đơn dọn phòng homestay/mini hotel tại Quy Nhơn – cập nhật {new Date().toLocaleDateString("vi-VN")}.
+            </p>
           </div>
           <Button asChild variant="outline"><Link to="/">Về trang chủ</Link></Button>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { label: "Tổng lịch đặt", value: stats.total },
-            { label: "Chờ xác nhận", value: stats.pending },
-            { label: "Đang thực hiện", value: stats.inProgress },
-            { label: "Hoàn thành", value: stats.done },
-          ].map((s) => (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          {stats.map((s) => (
             <div key={s.label} className="rounded-2xl bg-card border border-border/60 p-5 shadow-card">
-              <p className="text-sm text-muted-foreground">{s.label}</p>
-              <p className="mt-1 text-3xl font-bold">{s.value}</p>
+              <div className={`inline-flex h-9 w-9 items-center justify-center rounded-xl ${s.tint}`}>
+                <s.icon className="h-4 w-4" />
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">{s.label}</p>
+              <p className="mt-1 text-2xl font-bold">{s.value}</p>
             </div>
           ))}
         </div>
 
-        <Tabs defaultValue="bookings" className="mt-10">
-          <TabsList>
-            <TabsTrigger value="bookings">Lịch đặt</TabsTrigger>
-            <TabsTrigger value="partners">Cộng tác viên</TabsTrigger>
-            <TabsTrigger value="services">Dịch vụ</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="bookings" className="mt-6">
-            <div className="rounded-2xl bg-card border border-border/60 shadow-card overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mã</TableHead>
-                    <TableHead>Khách hàng</TableHead>
-                    <TableHead>Dịch vụ</TableHead>
-                    <TableHead>Lịch hẹn</TableHead>
-                    <TableHead>Địa chỉ</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Hành động</TableHead>
+        <div className="mt-10 rounded-2xl bg-card border border-border/60 shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
+            <h2 className="font-semibold">Danh sách đơn hôm nay</h2>
+            <span className="text-xs text-muted-foreground">{sampleBookings.length} đơn</span>
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mã</TableHead>
+                  <TableHead>Cơ sở</TableHead>
+                  <TableHead>Khu vực</TableHead>
+                  <TableHead className="text-right">Số phòng</TableHead>
+                  <TableHead>Khung giờ</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Người dọn</TableHead>
+                  <TableHead className="text-right">Giá</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sampleBookings.map((b) => (
+                  <TableRow key={b.id}>
+                    <TableCell className="font-mono text-xs">{b.id}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">{b.propertyName}</div>
+                      <div className="text-xs text-muted-foreground">{b.phone}</div>
+                    </TableCell>
+                    <TableCell className="text-sm">{labelFrom(areas, b.area)}</TableCell>
+                    <TableCell className="text-right font-semibold">{b.rooms}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {labelFrom(timeSlots, b.timeSlot)}
+                      {b.urgency === "urgent" && (
+                        <span className="ml-1 text-[10px] font-medium text-amber-700">GẤP</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={statusColor[b.status]} variant="outline">
+                        {statusLabel[b.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">{b.cleaner ?? <span className="text-muted-foreground italic">chưa gán</span>}</TableCell>
+                    <TableCell className="text-right font-semibold text-primary">{formatVND(b.price)}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
-                        Chưa có lịch đặt nào. <Link to="/dat-lich" className="text-primary underline">Tạo lịch mẫu</Link>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {bookings.map((b) => {
-                    const svc = services.find((s) => s.slug === b.service)?.name || b.service;
-                    return (
-                      <TableRow key={b.id}>
-                        <TableCell className="font-mono text-xs">{b.id}</TableCell>
-                        <TableCell>
-                          <div className="font-medium">{b.name}</div>
-                          <div className="text-xs text-muted-foreground">{b.phone}</div>
-                        </TableCell>
-                        <TableCell className="text-sm">{svc}</TableCell>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          {b.date} · {b.time} <div className="text-xs text-muted-foreground">{b.hours} giờ</div>
-                        </TableCell>
-                        <TableCell className="text-sm max-w-[220px] truncate">{b.address}</TableCell>
-                        <TableCell>
-                          <Badge className={statusColor[b.status]} variant="outline">
-                            {statusLabel[b.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Select value={b.status} onValueChange={(v) => changeStatus(b.id, v as Booking["status"])}>
-                            <SelectTrigger className="w-[160px] h-8"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(statusLabel).map(([k, v]) => (
-                                <SelectItem key={k} value={k}>{v}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
 
-          <TabsContent value="partners" className="mt-6">
-            <div className="rounded-2xl bg-card border border-border/60 shadow-card overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mã</TableHead>
-                    <TableHead>Họ tên</TableHead>
-                    <TableHead>SĐT</TableHead>
-                    <TableHead>Khu vực</TableHead>
-                    <TableHead>Thời gian rảnh</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {partners.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
-                        Chưa có đăng ký cộng tác viên.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {partners.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-mono text-xs">{p.id}</TableCell>
-                      <TableCell>{p.name}</TableCell>
-                      <TableCell>{p.phone}</TableCell>
-                      <TableCell>{p.area}</TableCell>
-                      <TableCell className="text-sm">{p.availability || "—"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="services" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {services.map((s) => (
-                <div key={s.slug} className="rounded-2xl bg-card border border-border/60 p-5 shadow-card">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-mint/50 text-mint-foreground flex items-center justify-center">
-                      <s.icon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{s.name}</p>
-                      <p className="text-xs text-muted-foreground">{s.price}</p>
-                    </div>
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground line-clamp-3">{s.description}</p>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {services.slice(0, 3).map((s) => (
+            <div key={s.slug} className="rounded-2xl bg-card border border-border/60 p-5 shadow-card">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-mint/50 text-mint-foreground flex items-center justify-center">
+                  <s.icon className="h-5 w-5" />
                 </div>
-              ))}
+                <div>
+                  <p className="font-semibold text-sm">{s.name}</p>
+                  <p className="text-xs text-muted-foreground">{s.price}</p>
+                </div>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          ))}
+        </div>
       </section>
     </SiteLayout>
   );

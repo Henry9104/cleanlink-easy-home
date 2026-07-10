@@ -15,8 +15,6 @@ import { Route as GioiThieuRouteImport } from './routes/gioi-thieu'
 import { Route as DichVuRouteImport } from './routes/dich-vu'
 import { Route as DatLichRouteImport } from './routes/dat-lich'
 import { Route as DanhGiaRouteImport } from './routes/danh-gia'
-import { Route as CongTacVienRouteImport } from './routes/cong-tac-vien'
-import { Route as BangGiaRouteImport } from './routes/bang-gia'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -50,16 +48,6 @@ const DanhGiaRoute = DanhGiaRouteImport.update({
   path: '/danh-gia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CongTacVienRoute = CongTacVienRouteImport.update({
-  id: '/cong-tac-vien',
-  path: '/cong-tac-vien',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BangGiaRoute = BangGiaRouteImport.update({
-  id: '/bang-gia',
-  path: '/bang-gia',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -74,8 +62,6 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bang-gia': typeof BangGiaRoute
-  '/cong-tac-vien': typeof CongTacVienRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -86,8 +72,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bang-gia': typeof BangGiaRoute
-  '/cong-tac-vien': typeof CongTacVienRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -99,8 +83,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/bang-gia': typeof BangGiaRoute
-  '/cong-tac-vien': typeof CongTacVienRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -113,8 +95,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
-    | '/bang-gia'
-    | '/cong-tac-vien'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -125,8 +105,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
-    | '/bang-gia'
-    | '/cong-tac-vien'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -137,8 +115,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
-    | '/bang-gia'
-    | '/cong-tac-vien'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -150,8 +126,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  BangGiaRoute: typeof BangGiaRoute
-  CongTacVienRoute: typeof CongTacVienRoute
   DanhGiaRoute: typeof DanhGiaRoute
   DatLichRoute: typeof DatLichRoute
   DichVuRoute: typeof DichVuRoute
@@ -204,20 +178,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DanhGiaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cong-tac-vien': {
-      id: '/cong-tac-vien'
-      path: '/cong-tac-vien'
-      fullPath: '/cong-tac-vien'
-      preLoaderRoute: typeof CongTacVienRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/bang-gia': {
-      id: '/bang-gia'
-      path: '/bang-gia'
-      fullPath: '/bang-gia'
-      preLoaderRoute: typeof BangGiaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -238,8 +198,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  BangGiaRoute: BangGiaRoute,
-  CongTacVienRoute: CongTacVienRoute,
   DanhGiaRoute: DanhGiaRoute,
   DatLichRoute: DatLichRoute,
   DichVuRoute: DichVuRoute,
@@ -250,13 +208,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

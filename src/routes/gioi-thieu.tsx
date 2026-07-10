@@ -1,24 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/SiteLayout";
-import { Sparkles, Handshake, Clock, ShieldCheck, HeartHandshake, Eye } from "lucide-react";
+import { MapPin, Clock, ShieldCheck, HeartHandshake, Eye, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/gioi-thieu")({
   head: () => ({
     meta: [
-      { title: "Giới thiệu Cleanlink" },
-      { name: "description", content: "Cleanlink là nền tảng kết nối khách hàng với cộng tác viên vệ sinh được đào tạo, kiểm tra và giám sát chất lượng." },
+      { title: "Giới thiệu CleanLink" },
+      { name: "description", content: "CleanLink là nền tảng đặt người dọn dành riêng cho chủ homestay, mini hotel và căn hộ thuê ngắn hạn tại Quy Nhơn." },
     ],
   }),
   component: AboutPage,
 });
 
 const values = [
-  { icon: Sparkles, title: "Sạch sẽ", desc: "Tiêu chuẩn sạch rõ ràng ở mọi lịch hẹn." },
-  { icon: Handshake, title: "Trung thực", desc: "Giao tiếp minh bạch với khách hàng và cộng tác viên." },
-  { icon: Clock, title: "Đúng giờ", desc: "Tôn trọng thời gian là tôn trọng khách hàng." },
-  { icon: ShieldCheck, title: "An toàn", desc: "Xác minh danh tính, bảo hiểm trách nhiệm." },
-  { icon: HeartHandshake, title: "Tận tâm", desc: "Chăm sóc cả trước, trong và sau dịch vụ." },
-  { icon: Eye, title: "Minh bạch", desc: "Giá cả, quy trình, chất lượng luôn công khai." },
+  { icon: Zap, title: "Nhanh trong turnover", desc: "Điều phối người dọn trong khung giờ check-out/check-in." },
+  { icon: MapPin, title: "Am hiểu Quy Nhơn", desc: "Đội ngũ người dọn phủ toàn thành phố và ven biển." },
+  { icon: Clock, title: "Đúng giờ", desc: "Cam kết phòng sẵn sàng trước giờ khách check-in." },
+  { icon: ShieldCheck, title: "An toàn", desc: "Người dọn được xác minh danh tính và đào tạo." },
+  { icon: HeartHandshake, title: "Hai bên đều thắng", desc: "Chủ cơ sở tiết kiệm chi phí vận hành, người dọn có thu nhập ổn định." },
+  { icon: Eye, title: "Minh bạch", desc: "Giá, tracking, checklist và ảnh xác nhận – tất cả trên app." },
 ];
 
 function AboutPage() {
@@ -26,9 +26,9 @@ function AboutPage() {
     <SiteLayout>
       <section className="bg-gradient-hero">
         <div className="mx-auto max-w-3xl px-4 md:px-6 py-16 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold">Về Cleanlink</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Về CleanLink</h1>
           <p className="mt-5 text-muted-foreground text-lg">
-            Chúng tôi tin rằng ai cũng xứng đáng có một không gian sống sạch sẽ, thoải mái mà không cần đánh đổi thời gian với gia đình.
+            Chúng tôi tin rằng chủ homestay và mini hotel tại Quy Nhơn xứng đáng có một công cụ turnover phòng chuyên nghiệp, thay vì phải tự tìm người dọn qua nhóm Zalo mỗi ngày.
           </p>
         </div>
       </section>
@@ -36,14 +36,13 @@ function AboutPage() {
       <section className="mx-auto max-w-4xl px-4 md:px-6 py-16">
         <div className="prose prose-slate max-w-none text-muted-foreground leading-relaxed space-y-4">
           <p>
-            <strong className="text-foreground">Cleanlink</strong> là nền tảng kết nối khách hàng với đội ngũ cộng tác viên vệ sinh được đào tạo,
-            kiểm tra và giám sát chất lượng. Chúng tôi xây dựng một quy trình đơn giản để mọi gia đình – dù bận rộn đến đâu –
-            đều có thể sở hữu một ngôi nhà thơm sạch chỉ sau vài thao tác.
+            <strong className="text-foreground">CleanLink</strong> là nền tảng hai phía dành riêng cho ngành lưu trú ngắn hạn tại Quy Nhơn.
+            Một phía là chủ homestay, mini hotel, căn hộ Airbnb; phía còn lại là đội ngũ người dọn địa phương đã qua xác minh và đào tạo.
           </p>
           <p>
-            Mỗi cộng tác viên Cleanlink đều được xác minh danh tính, tham gia khóa huấn luyện dịch vụ và được đánh giá liên tục
-            dựa trên phản hồi từ khách hàng. Chúng tôi cam kết đồng hành lâu dài với cả người sử dụng dịch vụ lẫn cộng tác viên,
-            xây dựng một cộng đồng làm việc tử tế và có trách nhiệm.
+            Chúng tôi tập trung giải quyết đúng một bài toán: <strong className="text-foreground">turnover phòng trong khung giờ check-out/check-in</strong>.
+            Bằng cách đưa toàn bộ flow lên app – đặt lịch, giá dự kiến, tracking, checklist, ảnh xác nhận, thanh toán và đánh giá – CleanLink giúp
+            chủ cơ sở tiết kiệm 30–50% thời gian điều phối mỗi ngày.
           </p>
         </div>
 
