@@ -1,15 +1,31 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles, Menu, X } from "lucide-react";
+import { Sparkles, Menu, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const nav = [
+const primary = [
   { to: "/", label: "Trang chủ" },
-  { to: "/dich-vu", label: "Dịch vụ" },
-  { to: "/bang-gia", label: "Bảng giá" },
-  { to: "/quy-trinh", label: "Quy trình" },
-  { to: "/cong-tac-vien", label: "Cộng tác viên" },
+  { to: "/dat-lich", label: "Đặt lịch" },
+  { to: "/gia-du-kien", label: "Giá dự kiến" },
+  { to: "/theo-doi-don", label: "Theo dõi đơn" },
+  { to: "/nguoi-don", label: "Người dọn" },
+] as const;
+
+const more = [
+  { to: "/checklist", label: "Checklist chất lượng" },
+  { to: "/anh-xac-nhan", label: "Ảnh xác nhận" },
+  { to: "/tin-nhan", label: "Tin nhắn" },
+  { to: "/thanh-toan", label: "Thanh toán" },
   { to: "/danh-gia", label: "Đánh giá" },
+  { to: "/ho-tro", label: "Hỗ trợ" },
+  { to: "/quy-trinh", label: "Quy trình" },
+  { to: "/dich-vu", label: "Dịch vụ" },
   { to: "/gioi-thieu", label: "Giới thiệu" },
   { to: "/lien-he", label: "Liên hệ" },
 ] as const;
@@ -23,11 +39,13 @@ export function Header() {
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
             <Sparkles className="h-5 w-5" />
           </span>
-          <span className="tracking-tight">Cleanlink</span>
+          <span className="tracking-tight">
+            Clean<span className="text-primary">Link</span>
+          </span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
-          {nav.map((n) => (
+          {primary.map((n) => (
             <Link
               key={n.to}
               to={n.to}
@@ -38,6 +56,18 @@ export function Header() {
               {n.label}
             </Link>
           ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger className="px-3 py-2 text-sm font-medium text-muted-foreground rounded-md hover:text-foreground hover:bg-muted transition-colors inline-flex items-center gap-1">
+              Thêm <ChevronDown className="h-3.5 w-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {more.map((n) => (
+                <DropdownMenuItem key={n.to} asChild>
+                  <Link to={n.to}>{n.label}</Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         <div className="hidden lg:flex items-center gap-2">
@@ -45,7 +75,7 @@ export function Header() {
             <Link to="/admin">Quản trị</Link>
           </Button>
           <Button asChild size="sm" className="rounded-full shadow-soft">
-            <Link to="/dat-lich">Đặt lịch ngay</Link>
+            <Link to="/dat-lich">Đặt người dọn</Link>
           </Button>
         </div>
 
@@ -59,9 +89,9 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-border bg-background">
+        <div className="lg:hidden border-t border-border bg-background max-h-[70vh] overflow-y-auto">
           <div className="px-4 py-3 space-y-1">
-            {nav.map((n) => (
+            {[...primary, ...more, { to: "/admin", label: "Quản trị" } as const].map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
@@ -71,11 +101,8 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
-            <Link to="/admin" onClick={() => setOpen(false)} className="block px-3 py-2.5 rounded-md text-sm font-medium hover:bg-muted">
-              Quản trị
-            </Link>
             <Button asChild className="w-full mt-2 rounded-full">
-              <Link to="/dat-lich" onClick={() => setOpen(false)}>Đặt lịch ngay</Link>
+              <Link to="/dat-lich" onClick={() => setOpen(false)}>Đặt người dọn</Link>
             </Button>
           </div>
         </div>

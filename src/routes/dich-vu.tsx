@@ -7,33 +7,41 @@ import { ArrowRight } from "lucide-react";
 export const Route = createFileRoute("/dich-vu")({
   head: () => ({
     meta: [
-      { title: "Dịch vụ dọn dẹp vệ sinh – Cleanlink" },
-      { name: "description", content: "Từ dọn dẹp theo giờ, tổng vệ sinh đến giặt sofa, vệ sinh văn phòng – Cleanlink có đủ gói dịch vụ cho mọi nhu cầu." },
+      { title: "Dịch vụ dọn phòng lưu trú – CleanLink" },
+      { name: "description", content: "Ba gói dọn phòng cốt lõi cho homestay, mini hotel, căn hộ thuê ngắn hạn tại Quy Nhơn – kèm checklist và ảnh xác nhận." },
     ],
   }),
   component: ServicesPage,
 });
 
 function ServicesPage() {
+  const core = services.slice(0, 3);
+  const features = services.slice(3, 5);
+  const expansion = services.slice(5);
+
   return (
     <SiteLayout>
       <section className="bg-gradient-hero">
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-16 md:py-20 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold">Dịch vụ Cleanlink</h1>
+          <h1 className="text-4xl md:text-5xl font-bold">Dịch vụ CleanLink</h1>
           <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-            Đa dạng gói dịch vụ chuyên nghiệp – phù hợp với mọi không gian và ngân sách.
+            Chỉ tập trung vào bài toán turnover phòng cho cơ sở lưu trú ngắn hạn.
           </p>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-16">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {services.map((s) => (
+        <h2 className="text-2xl font-bold">Dịch vụ chính</h2>
+        <div className="mt-6 grid gap-6 md:grid-cols-3">
+          {core.map((s) => (
             <div key={s.slug} className="rounded-2xl bg-card p-7 shadow-card border border-border/60 flex flex-col">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-mint/50 text-mint-foreground">
-                <s.icon className="h-6 w-6" />
+              <div className="flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-mint/50 text-mint-foreground">
+                  <s.icon className="h-6 w-6" />
+                </div>
+                {s.tag && <span className="text-xs rounded-full bg-primary/10 text-primary px-2 py-1 font-medium">{s.tag}</span>}
               </div>
-              <h2 className="mt-5 text-xl font-semibold">{s.name}</h2>
+              <h3 className="mt-5 text-xl font-semibold">{s.name}</h3>
               <p className="mt-2 text-sm text-muted-foreground flex-1">{s.description}</p>
               <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-lg bg-muted/60 px-3 py-2">
@@ -41,18 +49,54 @@ function ServicesPage() {
                   <p className="font-medium">{s.duration}</p>
                 </div>
                 <div className="rounded-lg bg-muted/60 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Giá tham khảo</p>
+                  <p className="text-xs text-muted-foreground">Giá</p>
                   <p className="font-semibold text-primary">{s.price}</p>
                 </div>
               </div>
               <Button asChild className="mt-5 rounded-full">
-                <Link to="/dat-lich" search={{ service: s.slug } as never}>
-                  Đặt dịch vụ này <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
+                <Link to="/dat-lich">Đặt dịch vụ này <ArrowRight className="ml-1 h-4 w-4" /></Link>
               </Button>
             </div>
           ))}
         </div>
+
+        <h2 className="mt-16 text-2xl font-bold">Đi kèm mọi đơn</h2>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          {features.map((s) => (
+            <div key={s.slug} className="rounded-2xl bg-gradient-soft p-7 border border-border/60 flex gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-primary shrink-0">
+                <s.icon className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">{s.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>
+                <p className="mt-3 text-xs text-primary font-medium">{s.price}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {expansion.length > 0 && (
+          <>
+            <h2 className="mt-16 text-2xl font-bold">Dịch vụ mở rộng (sắp mở)</h2>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              {expansion.map((s) => (
+                <div key={s.slug} className="rounded-2xl bg-card p-6 border border-dashed border-border shadow-card/50 opacity-90">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky/60 text-sky-foreground">
+                      <s.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{s.name}</h3>
+                      <p className="text-xs text-muted-foreground">{s.price}</p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground">{s.description}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     </SiteLayout>
   );

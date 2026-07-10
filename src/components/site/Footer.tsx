@@ -10,46 +10,46 @@ export function Footer() {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Sparkles className="h-5 w-5" />
             </span>
-            Cleanlink
+            CleanLink
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
-            Nền tảng đặt lịch dịch vụ dọn dẹp vệ sinh chuyên nghiệp, minh bạch và tận tâm.
+            Nền tảng đặt người dọn dành cho chủ homestay, mini hotel và căn hộ thuê ngắn hạn tại Quy Nhơn.
           </p>
         </div>
 
         <div>
-          <h4 className="font-semibold mb-3 text-sm">Dịch vụ</h4>
+          <h4 className="font-semibold mb-3 text-sm">Cho chủ cơ sở</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link to="/dich-vu" className="hover:text-primary">Dọn dẹp theo giờ</Link></li>
-            <li><Link to="/dich-vu" className="hover:text-primary">Tổng vệ sinh</Link></li>
-            <li><Link to="/dich-vu" className="hover:text-primary">Vệ sinh văn phòng</Link></li>
-            <li><Link to="/dich-vu" className="hover:text-primary">Giặt sofa, nệm</Link></li>
+            <li><Link to="/dat-lich" className="hover:text-primary">Đặt lịch dọn</Link></li>
+            <li><Link to="/gia-du-kien" className="hover:text-primary">Giá dự kiến</Link></li>
+            <li><Link to="/theo-doi-don" className="hover:text-primary">Theo dõi đơn</Link></li>
+            <li><Link to="/thanh-toan" className="hover:text-primary">Thanh toán</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-semibold mb-3 text-sm">Công ty</h4>
+          <h4 className="font-semibold mb-3 text-sm">Cho người dọn</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link to="/gioi-thieu" className="hover:text-primary">Giới thiệu</Link></li>
-            <li><Link to="/quy-trinh" className="hover:text-primary">Quy trình</Link></li>
-            <li><Link to="/cong-tac-vien" className="hover:text-primary">Cộng tác viên</Link></li>
-            <li><Link to="/lien-he" className="hover:text-primary">Liên hệ</Link></li>
+            <li><Link to="/nguoi-don" className="hover:text-primary">Nhận việc</Link></li>
+            <li><Link to="/checklist" className="hover:text-primary">Checklist</Link></li>
+            <li><Link to="/anh-xac-nhan" className="hover:text-primary">Ảnh xác nhận</Link></li>
+            <li><Link to="/tin-nhan" className="hover:text-primary">Tin nhắn</Link></li>
           </ul>
         </div>
 
         <div>
           <h4 className="font-semibold mb-3 text-sm">Liên hệ</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> 1900 8686</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> hello@cleanlink.vn</li>
-            <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> 12 Nguyễn Huệ, Q.1, TP.HCM</li>
+            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> 0905 123 456</li>
+            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> support@cleanlink.vn</li>
+            <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Trung tâm Quy Nhơn, Bình Định</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-5 text-xs text-muted-foreground flex flex-col md:flex-row items-center justify-between gap-2">
-          <p>© {new Date().getFullYear()} Cleanlink. Sạch sẽ – Trung thực – Đúng giờ.</p>
-          <p>Đặt lịch dọn dẹp dễ dàng tại Việt Nam</p>
+          <p>© {new Date().getFullYear()} CleanLink. Nền tảng dọn phòng lưu trú ngắn hạn.</p>
+          <p>Khu vực hoạt động: Quy Nhơn, Bình Định</p>
         </div>
       </div>
     </footer>
