@@ -9,18 +9,46 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TinNhanRouteImport } from './routes/tin-nhan'
+import { Route as TheoDoiDonRouteImport } from './routes/theo-doi-don'
+import { Route as ThanhToanRouteImport } from './routes/thanh-toan'
 import { Route as QuyTrinhRouteImport } from './routes/quy-trinh'
+import { Route as NguoiDonRouteImport } from './routes/nguoi-don'
 import { Route as LienHeRouteImport } from './routes/lien-he'
+import { Route as HoTroRouteImport } from './routes/ho-tro'
 import { Route as GioiThieuRouteImport } from './routes/gioi-thieu'
+import { Route as GiaDuKienRouteImport } from './routes/gia-du-kien'
 import { Route as DichVuRouteImport } from './routes/dich-vu'
 import { Route as DatLichRouteImport } from './routes/dat-lich'
 import { Route as DanhGiaRouteImport } from './routes/danh-gia'
+import { Route as ChecklistRouteImport } from './routes/checklist'
+import { Route as AnhXacNhanRouteImport } from './routes/anh-xac-nhan'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TinNhanRoute = TinNhanRouteImport.update({
+  id: '/tin-nhan',
+  path: '/tin-nhan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TheoDoiDonRoute = TheoDoiDonRouteImport.update({
+  id: '/theo-doi-don',
+  path: '/theo-doi-don',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThanhToanRoute = ThanhToanRouteImport.update({
+  id: '/thanh-toan',
+  path: '/thanh-toan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QuyTrinhRoute = QuyTrinhRouteImport.update({
   id: '/quy-trinh',
   path: '/quy-trinh',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NguoiDonRoute = NguoiDonRouteImport.update({
+  id: '/nguoi-don',
+  path: '/nguoi-don',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LienHeRoute = LienHeRouteImport.update({
@@ -28,9 +56,19 @@ const LienHeRoute = LienHeRouteImport.update({
   path: '/lien-he',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HoTroRoute = HoTroRouteImport.update({
+  id: '/ho-tro',
+  path: '/ho-tro',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GioiThieuRoute = GioiThieuRouteImport.update({
   id: '/gioi-thieu',
   path: '/gioi-thieu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GiaDuKienRoute = GiaDuKienRouteImport.update({
+  id: '/gia-du-kien',
+  path: '/gia-du-kien',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DichVuRoute = DichVuRouteImport.update({
@@ -48,6 +86,16 @@ const DanhGiaRoute = DanhGiaRouteImport.update({
   path: '/danh-gia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChecklistRoute = ChecklistRouteImport.update({
+  id: '/checklist',
+  path: '/checklist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnhXacNhanRoute = AnhXacNhanRouteImport.update({
+  id: '/anh-xac-nhan',
+  path: '/anh-xac-nhan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -62,85 +110,169 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anh-xac-nhan': typeof AnhXacNhanRoute
+  '/checklist': typeof ChecklistRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
+  '/gia-du-kien': typeof GiaDuKienRoute
   '/gioi-thieu': typeof GioiThieuRoute
+  '/ho-tro': typeof HoTroRoute
   '/lien-he': typeof LienHeRoute
+  '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/thanh-toan': typeof ThanhToanRoute
+  '/theo-doi-don': typeof TheoDoiDonRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anh-xac-nhan': typeof AnhXacNhanRoute
+  '/checklist': typeof ChecklistRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
+  '/gia-du-kien': typeof GiaDuKienRoute
   '/gioi-thieu': typeof GioiThieuRoute
+  '/ho-tro': typeof HoTroRoute
   '/lien-he': typeof LienHeRoute
+  '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/thanh-toan': typeof ThanhToanRoute
+  '/theo-doi-don': typeof TheoDoiDonRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/anh-xac-nhan': typeof AnhXacNhanRoute
+  '/checklist': typeof ChecklistRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
+  '/gia-du-kien': typeof GiaDuKienRoute
   '/gioi-thieu': typeof GioiThieuRoute
+  '/ho-tro': typeof HoTroRoute
   '/lien-he': typeof LienHeRoute
+  '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/thanh-toan': typeof ThanhToanRoute
+  '/theo-doi-don': typeof TheoDoiDonRoute
+  '/tin-nhan': typeof TinNhanRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/anh-xac-nhan'
+    | '/checklist'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
+    | '/gia-du-kien'
     | '/gioi-thieu'
+    | '/ho-tro'
     | '/lien-he'
+    | '/nguoi-don'
     | '/quy-trinh'
+    | '/thanh-toan'
+    | '/theo-doi-don'
+    | '/tin-nhan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/admin'
+    | '/anh-xac-nhan'
+    | '/checklist'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
+    | '/gia-du-kien'
     | '/gioi-thieu'
+    | '/ho-tro'
     | '/lien-he'
+    | '/nguoi-don'
     | '/quy-trinh'
+    | '/thanh-toan'
+    | '/theo-doi-don'
+    | '/tin-nhan'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/anh-xac-nhan'
+    | '/checklist'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
+    | '/gia-du-kien'
     | '/gioi-thieu'
+    | '/ho-tro'
     | '/lien-he'
+    | '/nguoi-don'
     | '/quy-trinh'
+    | '/thanh-toan'
+    | '/theo-doi-don'
+    | '/tin-nhan'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AnhXacNhanRoute: typeof AnhXacNhanRoute
+  ChecklistRoute: typeof ChecklistRoute
   DanhGiaRoute: typeof DanhGiaRoute
   DatLichRoute: typeof DatLichRoute
   DichVuRoute: typeof DichVuRoute
+  GiaDuKienRoute: typeof GiaDuKienRoute
   GioiThieuRoute: typeof GioiThieuRoute
+  HoTroRoute: typeof HoTroRoute
   LienHeRoute: typeof LienHeRoute
+  NguoiDonRoute: typeof NguoiDonRoute
   QuyTrinhRoute: typeof QuyTrinhRoute
+  ThanhToanRoute: typeof ThanhToanRoute
+  TheoDoiDonRoute: typeof TheoDoiDonRoute
+  TinNhanRoute: typeof TinNhanRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tin-nhan': {
+      id: '/tin-nhan'
+      path: '/tin-nhan'
+      fullPath: '/tin-nhan'
+      preLoaderRoute: typeof TinNhanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/theo-doi-don': {
+      id: '/theo-doi-don'
+      path: '/theo-doi-don'
+      fullPath: '/theo-doi-don'
+      preLoaderRoute: typeof TheoDoiDonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thanh-toan': {
+      id: '/thanh-toan'
+      path: '/thanh-toan'
+      fullPath: '/thanh-toan'
+      preLoaderRoute: typeof ThanhToanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/quy-trinh': {
       id: '/quy-trinh'
       path: '/quy-trinh'
       fullPath: '/quy-trinh'
       preLoaderRoute: typeof QuyTrinhRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nguoi-don': {
+      id: '/nguoi-don'
+      path: '/nguoi-don'
+      fullPath: '/nguoi-don'
+      preLoaderRoute: typeof NguoiDonRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lien-he': {
@@ -150,11 +282,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LienHeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ho-tro': {
+      id: '/ho-tro'
+      path: '/ho-tro'
+      fullPath: '/ho-tro'
+      preLoaderRoute: typeof HoTroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gioi-thieu': {
       id: '/gioi-thieu'
       path: '/gioi-thieu'
       fullPath: '/gioi-thieu'
       preLoaderRoute: typeof GioiThieuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gia-du-kien': {
+      id: '/gia-du-kien'
+      path: '/gia-du-kien'
+      fullPath: '/gia-du-kien'
+      preLoaderRoute: typeof GiaDuKienRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dich-vu': {
@@ -178,6 +324,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DanhGiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checklist': {
+      id: '/checklist'
+      path: '/checklist'
+      fullPath: '/checklist'
+      preLoaderRoute: typeof ChecklistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anh-xac-nhan': {
+      id: '/anh-xac-nhan'
+      path: '/anh-xac-nhan'
+      fullPath: '/anh-xac-nhan'
+      preLoaderRoute: typeof AnhXacNhanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -198,12 +358,20 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AnhXacNhanRoute: AnhXacNhanRoute,
+  ChecklistRoute: ChecklistRoute,
   DanhGiaRoute: DanhGiaRoute,
   DatLichRoute: DatLichRoute,
   DichVuRoute: DichVuRoute,
+  GiaDuKienRoute: GiaDuKienRoute,
   GioiThieuRoute: GioiThieuRoute,
+  HoTroRoute: HoTroRoute,
   LienHeRoute: LienHeRoute,
+  NguoiDonRoute: NguoiDonRoute,
   QuyTrinhRoute: QuyTrinhRoute,
+  ThanhToanRoute: ThanhToanRoute,
+  TheoDoiDonRoute: TheoDoiDonRoute,
+  TinNhanRoute: TinNhanRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
