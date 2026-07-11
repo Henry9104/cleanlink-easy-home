@@ -2,16 +2,19 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import {
-  LogOut,
-  LogIn,
+  Clock3,
+  Wallet,
   Building2,
   Camera,
   ListChecks,
   MapPin,
   ArrowRight,
-  Star,
-  Zap,
+  UserCheck,
   ShieldCheck,
+  BadgeCheck,
+  ClipboardCheck,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 import heroImg from "@/assets/hero-clean.jpg";
 import staffImg from "@/assets/staff.jpg";
@@ -20,11 +23,11 @@ import { services } from "@/lib/cleanlink-data";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CleanLink – Đặt người dọn nhanh cho homestay & mini hotel Quy Nhơn" },
+      { title: "CleanLink – Đặt người dọn phòng nhanh tại Quy Nhơn" },
       {
         name: "description",
         content:
-          "CleanLink giúp chủ homestay, mini hotel và căn hộ thuê ngắn hạn tại Quy Nhơn đặt người dọn nhanh trong khung giờ check-out/check-in, có tracking, checklist và ảnh xác nhận.",
+          "CleanLink là nền tảng kết nối chủ homestay, khách sạn nhỏ, nhà nghỉ và căn hộ thuê ngắn hạn tại Quy Nhơn với người dọn phù hợp – biết giá trước, theo dõi tiến độ và kiểm tra chất lượng sau khi dọn.",
       },
     ],
   }),
@@ -32,21 +35,27 @@ export const Route = createFileRoute("/")({
 });
 
 const promises = [
-  { icon: LogOut, title: "Dọn phòng nhanh sau check-out", desc: "Điều phối người dọn trong 30–60 phút, kịp turnover trưa." },
-  { icon: LogIn, title: "Sẵn sàng phòng trước giờ check-in", desc: "Cam kết phòng gọn gàng trước 14:00 mỗi ngày." },
-  { icon: Building2, title: "Phù hợp homestay, mini hotel, căn hộ", desc: "Xử lý cùng lúc nhiều phòng cho cơ sở lưu trú ngắn hạn." },
-  { icon: MapPin, title: "Phủ toàn Quy Nhơn", desc: "Trung tâm, Nhơn Lý, Eo Gió, Bãi Xếp, Nhơn Hải." },
-  { icon: Camera, title: "Ảnh xác nhận sau khi dọn", desc: "Chủ cơ sở kiểm tra chất lượng ngay trên app từ xa." },
-  { icon: ListChecks, title: "Checklist chuẩn cho từng phòng", desc: "7 hạng mục bắt buộc, không sót đầu việc." },
+  { icon: Clock3, title: "Tìm người dọn trong giờ cao điểm", desc: "Kết nối nhanh người dọn phù hợp trong khung giờ khách trả phòng – nhận phòng." },
+  { icon: Wallet, title: "Biết giá trước khi đặt", desc: "Giá tính theo loại phòng và số phòng, phụ phí dọn gấp hiển thị rõ trước khi xác nhận." },
+  { icon: Building2, title: "Phù hợp nhiều loại cơ sở lưu trú", desc: "Homestay, khách sạn nhỏ, nhà nghỉ và căn hộ thuê ngắn hạn." },
+  { icon: BadgeCheck, title: "Người dọn có thông tin đáng tin cậy", desc: "Hồ sơ người dọn được xác minh, có lịch sử công việc và đánh giá." },
+  { icon: Camera, title: "Có hình ảnh xác nhận sau khi dọn", desc: "Chủ cơ sở kiểm tra chất lượng phòng ngay trên ứng dụng, không cần đến tận nơi." },
+  { icon: ListChecks, title: "Hạn chế bỏ sót công việc", desc: "Danh sách 7 công việc chuẩn cho từng phòng, người dọn đánh dấu từng mục." },
 ];
 
 const flow = [
-  { n: 1, title: "Chủ cơ sở đặt lịch", desc: "Điền số phòng, khung giờ, khu vực – 60 giây." },
-  { n: 2, title: "Xem giá dự kiến & xác nhận", desc: "Giá minh bạch theo số phòng, phụ phí gấp rõ ràng." },
-  { n: 3, title: "Người dọn nhận việc", desc: "Điều phối tự động, ưu tiên người dọn gần nhất." },
-  { n: 4, title: "Theo dõi trạng thái", desc: "Đang di chuyển, đang dọn, đã hoàn thành – realtime." },
-  { n: 5, title: "Checklist & ảnh xác nhận", desc: "Người dọn tick 7 hạng mục, chụp ảnh sau khi dọn." },
-  { n: 6, title: "Thanh toán & đánh giá", desc: "Thanh toán trên app, đánh giá sao cho người dọn." },
+  { n: 1, title: "Chủ cơ sở đặt lịch", desc: "Điền loại cơ sở, số phòng, khung giờ và khu vực trong khoảng 1 phút." },
+  { n: 2, title: "Xem giá và xác nhận", desc: "Giá dự kiến hiển thị rõ theo loại phòng, số phòng và phụ phí (nếu có)." },
+  { n: 3, title: "Người dọn nhận việc", desc: "Đơn hiển thị cho người dọn phù hợp ở khu vực gần nhất." },
+  { n: 4, title: "Theo dõi tiến độ", desc: "Xem trạng thái đơn: đang đến, đang dọn, đã hoàn thành." },
+  { n: 5, title: "Kiểm tra kết quả", desc: "Người dọn gửi hình ảnh và đánh dấu công việc đã hoàn thành." },
+  { n: 6, title: "Xác nhận và đánh giá", desc: "Chủ cơ sở xác nhận hoàn tất dịch vụ và để lại đánh giá." },
+];
+
+const highlights = [
+  { icon: UserCheck, label: "Người dọn có thông tin rõ ràng" },
+  { icon: Wallet, label: "Giá được báo trước khi xác nhận" },
+  { icon: ClipboardCheck, label: "Dễ kiểm tra chất lượng sau khi dọn" },
 ];
 
 function Home() {
@@ -58,15 +67,14 @@ function Home() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-primary shadow-card backdrop-blur">
               <MapPin className="h-3.5 w-3.5" />
-              Nền tảng dọn phòng lưu trú ngắn hạn tại Quy Nhơn
+              Nền tảng kết nối chủ cơ sở lưu trú với người dọn tại Quy Nhơn
             </div>
             <h1 className="mt-5 text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight text-foreground">
-              Đặt người dọn nhanh{" "}
-              <span className="text-primary">trong giờ check-out</span>,
-              <br className="hidden md:block" /> phòng sẵn sàng trước check-in
+              Đặt người dọn phòng nhanh{" "}
+              <span className="text-primary">tại Quy Nhơn</span>
             </h1>
             <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-xl">
-              CleanLink dành riêng cho chủ homestay, mini hotel và căn hộ thuê ngắn hạn tại Quy Nhơn – có tracking, checklist chất lượng và ảnh xác nhận sau khi dọn.
+              CleanLink giúp chủ homestay, khách sạn nhỏ, nhà nghỉ và căn hộ cho thuê ngắn hạn tìm người dọn phù hợp, biết giá trước và kiểm tra chất lượng phòng sau khi hoàn thành.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="rounded-full px-7 shadow-soft">
@@ -79,35 +87,50 @@ function Home() {
               </Button>
             </div>
 
-            <div className="mt-10 flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                {[0,1,2,3,4].map((i) => <Star key={i} className="h-4 w-4 fill-primary text-primary" />)}
-                <span className="ml-2 font-semibold text-foreground">4.8/5</span>
-              </div>
-              <div>· Đã hoàn tất <span className="font-semibold text-foreground">3.200+</span> lượt turnover</div>
-              <div className="flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-primary" /> Người dọn đã xác minh</div>
-            </div>
+            <ul className="mt-10 grid gap-3 sm:grid-cols-3 text-sm">
+              {highlights.map((h) => (
+                <li key={h.label} className="flex items-start gap-2 text-muted-foreground">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70 text-primary shadow-card">
+                    <h.icon className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="font-medium text-foreground">{h.label}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="relative">
             <div className="relative rounded-3xl overflow-hidden shadow-soft aspect-[4/3]">
-              <img src={heroImg} alt="Phòng homestay Quy Nhơn sạch sẽ sau khi CleanLink turnover" width={1600} height={1200} className="h-full w-full object-cover" />
+              <img src={heroImg} alt="Phòng homestay Quy Nhơn sạch sẽ sau khi CleanLink hoàn tất" width={1600} height={1200} className="h-full w-full object-cover" />
             </div>
-            <div className="hidden md:block absolute -bottom-6 -left-6 rounded-2xl bg-white p-4 shadow-card w-72">
-              <div className="flex items-center gap-3">
+            <div className="hidden md:block absolute -bottom-8 -left-6 rounded-2xl bg-white p-4 shadow-card w-80">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Người dọn đang đến cơ sở</p>
+              <div className="mt-2 flex items-center gap-3">
                 <img src={staffImg} alt="Người dọn CleanLink" width={48} height={48} loading="lazy" className="h-12 w-12 rounded-full object-cover" />
                 <div>
-                  <p className="text-sm font-semibold">Chị Hồng · Người dọn</p>
-                  <p className="text-xs text-muted-foreground">5 phòng · Mai House Homestay</p>
+                  <p className="text-sm font-semibold flex items-center gap-1">
+                    Nguyễn Thị Lan
+                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-normal text-muted-foreground">Đã xác minh</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Dọn 5 phòng · Mai House Homestay</p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between rounded-lg bg-mint/40 px-3 py-2 text-xs text-mint-foreground font-medium">
-                <span>Đang di chuyển · ETA 8 phút</span>
-                <span className="rounded-full bg-white/70 px-2 py-0.5">2,1 km</span>
+              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <p className="flex items-center gap-1"><MapPin className="h-3 w-3" /> 12 Xuân Diệu, Quy Nhơn</p>
+                <p className="flex items-center gap-1"><Clock3 className="h-3 w-3" /> Cách cơ sở khoảng 2,1 km · Dự kiến đến sau 8 phút</p>
               </div>
-            </div>
-            <div className="hidden md:flex absolute -top-4 -right-4 items-center gap-2 rounded-full bg-white px-3 py-2 shadow-card text-xs font-semibold">
-              <Zap className="h-3.5 w-3.5 text-primary" /> Turnover 11:00–14:00
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
+                <Button asChild size="sm" variant="outline" className="rounded-full text-[11px] h-8 px-2">
+                  <Link to="/theo-doi-don">Trạng thái</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="rounded-full text-[11px] h-8 px-2">
+                  <Link to="/tin-nhan"><MessageCircle className="h-3 w-3 mr-0.5" />Nhắn tin</Link>
+                </Button>
+                <Button size="sm" className="rounded-full text-[11px] h-8 px-2">
+                  <Phone className="h-3 w-3 mr-0.5" />Gọi
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -116,8 +139,8 @@ function Home() {
       {/* PROMISES */}
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-20">
         <div className="text-center max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold">Vì sao chủ cơ sở lưu trú chọn CleanLink</h2>
-          <p className="mt-3 text-muted-foreground">Được thiết kế riêng cho bài toán turnover giữa các lượt khách ngắn ngày.</p>
+          <h2 className="text-3xl md:text-4xl font-bold">Vì sao chủ cơ sở chọn CleanLink?</h2>
+          <p className="mt-3 text-muted-foreground">Được thiết kế cho bài toán dọn phòng giữa các lượt khách ngắn ngày.</p>
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {promises.map((b) => (
@@ -136,8 +159,8 @@ function Home() {
       <section className="bg-gradient-soft">
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-20">
           <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold">Flow hai phía trên nền tảng</h2>
-            <p className="mt-3 text-muted-foreground">Từ đặt lịch tới đánh giá – mọi bước đều số hóa trên CleanLink.</p>
+            <h2 className="text-3xl md:text-4xl font-bold">Quy trình sử dụng CleanLink</h2>
+            <p className="mt-3 text-muted-foreground">Sáu bước, từ đặt lịch đến đánh giá.</p>
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {flow.map((s) => (
@@ -157,8 +180,8 @@ function Home() {
       <section className="mx-auto max-w-7xl px-4 md:px-6 py-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold">Dịch vụ dọn phòng</h2>
-            <p className="mt-2 text-muted-foreground">Ba gói dịch vụ cốt lõi cho cơ sở lưu trú ngắn hạn.</p>
+            <h2 className="text-3xl md:text-4xl font-bold">Gói dịch vụ</h2>
+            <p className="mt-2 text-muted-foreground">Hai gói dọn phòng cốt lõi cho cơ sở lưu trú ngắn hạn.</p>
           </div>
           <Button asChild variant="ghost" className="text-primary">
             <Link to="/dich-vu">Xem tất cả <ArrowRight className="ml-1 h-4 w-4" /></Link>
@@ -187,18 +210,19 @@ function Home() {
       {/* CTA */}
       <section className="mx-auto max-w-5xl px-4 md:px-6 py-20">
         <div className="rounded-3xl bg-primary text-primary-foreground p-10 md:p-14 shadow-soft text-center">
-          <h2 className="text-3xl md:text-4xl font-bold">Turnover phòng không còn là gánh nặng</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">Cần chuẩn bị phòng cho khách mới?</h2>
           <p className="mt-3 opacity-90 max-w-xl mx-auto">
-            Đặt người dọn cho homestay của bạn ngay hôm nay – CleanLink lo phần còn lại.
+            Nhập số phòng, địa chỉ và thời gian cần dọn để xem giá trước khi xác nhận.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Button asChild size="lg" variant="secondary" className="rounded-full px-8">
               <Link to="/dat-lich">Đặt người dọn</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="rounded-full px-8 bg-transparent border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/10">
-              <Link to="/nguoi-don">Tôi là người dọn</Link>
+              <Link to="/gia-du-kien">Xem giá dự kiến</Link>
             </Button>
           </div>
+          <p className="mt-5 text-sm opacity-90">Theo dõi tiến độ và kiểm tra kết quả ngay trên CleanLink.</p>
         </div>
       </section>
     </SiteLayout>

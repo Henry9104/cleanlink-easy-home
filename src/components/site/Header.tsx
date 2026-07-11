@@ -18,8 +18,8 @@ const primary = [
 ] as const;
 
 const more = [
-  { to: "/checklist", label: "Checklist chất lượng" },
-  { to: "/anh-xac-nhan", label: "Ảnh xác nhận" },
+  { to: "/checklist", label: "Danh sách công việc" },
+  { to: "/anh-xac-nhan", label: "Hình ảnh sau khi dọn" },
   { to: "/tin-nhan", label: "Tin nhắn" },
   { to: "/thanh-toan", label: "Thanh toán" },
   { to: "/danh-gia", label: "Đánh giá" },

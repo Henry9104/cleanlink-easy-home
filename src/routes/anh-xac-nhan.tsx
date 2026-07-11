@@ -9,8 +9,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/anh-xac-nhan")({
   head: () => ({
     meta: [
-      { title: "Ảnh xác nhận trước/sau – CleanLink" },
-      { name: "description", content: "Gửi ảnh xác nhận trước và sau khi dọn phòng cho chủ homestay/mini hotel." },
+      { title: "Hình ảnh sau khi dọn – CleanLink" },
+      { name: "description", content: "Gửi hình ảnh trước và sau khi dọn phòng cho chủ cơ sở lưu trú để kiểm tra chất lượng từ xa." },
     ],
   }),
   component: PhotoPage,
@@ -23,14 +23,14 @@ function PhotoPage() {
     <SiteLayout>
       <section className="mx-auto max-w-3xl px-4 md:px-6 py-10">
         <p className="text-xs font-medium text-primary uppercase tracking-wider">Đơn CL240712 · Mai House Homestay</p>
-        <h1 className="mt-1 text-3xl font-bold">Ảnh xác nhận trước / sau</h1>
+        <h1 className="mt-1 text-3xl font-bold">Hình ảnh sau khi dọn</h1>
         <p className="mt-2 text-muted-foreground">
           Chụp lại phòng trước và sau khi dọn để chủ cơ sở kiểm tra chất lượng từ xa.
         </p>
 
         <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <PhotoSlot label="Ảnh trước khi dọn" timestamp="13:12" />
-          <PhotoSlot label="Ảnh sau khi dọn" timestamp="13:52" isAfter />
+          <PhotoSlot label="Ảnh trước khi dọn" timestamp="13:12" sender="Nguyễn Thị Lan" sent={sent} />
+          <PhotoSlot label="Ảnh sau khi dọn" timestamp="13:52" sender="Nguyễn Thị Lan" sent={sent} isAfter />
         </div>
 
         <div className="mt-8 rounded-2xl bg-card border border-border/60 shadow-card p-5">
@@ -40,35 +40,49 @@ function PhotoPage() {
             </div>
             <div className="flex-1">
               <p className="font-semibold">
-                {sent ? "Ảnh xác nhận đã được gửi cho chủ cơ sở" : "Sẵn sàng gửi ảnh xác nhận"}
+                {sent ? "Hình ảnh đã được gửi cho chủ cơ sở." : "Sẵn sàng gửi hình ảnh xác nhận"}
               </p>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {sent ? "Đã gửi lúc 13:52 · Chủ cơ sở nhận được thông báo trên app." : "2 ảnh đã chụp · sẵn sàng chia sẻ với chủ cơ sở."}
+                {sent
+                  ? "Người gửi: Nguyễn Thị Lan · Gửi lúc 13:52 · Chủ cơ sở đã nhận được thông báo."
+                  : "2 ảnh đã chụp · Người gửi: Nguyễn Thị Lan · sẵn sàng gửi cho chủ cơ sở."}
               </p>
             </div>
             <Button
               className="rounded-full"
               onClick={() => {
                 setSent(true);
-                toast.success("Đã gửi ảnh xác nhận");
+                toast.success("Hình ảnh đã được gửi cho chủ cơ sở");
               }}
               disabled={sent}
             >
-              {sent ? "Đã gửi" : "Gửi cho chủ cơ sở"}
+              {sent ? "Đã gửi" : "Gửi ảnh xác nhận"}
             </Button>
           </div>
         </div>
 
         <div className="mt-6 flex gap-3">
-          <Button asChild variant="outline" className="rounded-full flex-1"><Link to="/checklist">Về checklist</Link></Button>
-          <Button asChild className="rounded-full flex-1"><Link to="/theo-doi-don">Xem đơn</Link></Button>
+          <Button asChild variant="outline" className="rounded-full flex-1"><Link to="/checklist">Về danh sách công việc</Link></Button>
+          <Button asChild className="rounded-full flex-1"><Link to="/theo-doi-don">Xem trạng thái đơn</Link></Button>
         </div>
       </section>
     </SiteLayout>
   );
 }
 
-function PhotoSlot({ label, timestamp, isAfter }: { label: string; timestamp: string; isAfter?: boolean }) {
+function PhotoSlot({
+  label,
+  timestamp,
+  sender,
+  sent,
+  isAfter,
+}: {
+  label: string;
+  timestamp: string;
+  sender: string;
+  sent: boolean;
+  isAfter?: boolean;
+}) {
   return (
     <div className="rounded-2xl bg-card border border-border/60 shadow-card overflow-hidden">
       <div className="relative aspect-[4/3] bg-muted">
@@ -82,9 +96,15 @@ function PhotoSlot({ label, timestamp, isAfter }: { label: string; timestamp: st
           <span>{timestamp}</span>
         </div>
       </div>
+      <div className="px-4 pt-3 text-xs text-muted-foreground flex items-center justify-between">
+        <span>Người gửi: {sender}</span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${sent ? "bg-emerald-100 text-emerald-700" : "bg-muted"}`}>
+          {sent ? "Đã gửi" : "Chưa gửi"}
+        </span>
+      </div>
       <div className="p-4 flex gap-2">
-        <Button size="sm" variant="outline" className="rounded-full flex-1"><Camera className="h-3.5 w-3.5 mr-1" /> Chụp lại</Button>
-        <Button size="sm" variant="ghost" className="rounded-full"><Upload className="h-3.5 w-3.5 mr-1" /> Tải lên</Button>
+        <Button size="sm" variant="outline" className="rounded-full flex-1"><Camera className="h-3.5 w-3.5 mr-1" /> Chụp ảnh</Button>
+        <Button size="sm" variant="ghost" className="rounded-full"><Upload className="h-3.5 w-3.5 mr-1" /> Tải ảnh lên</Button>
       </div>
     </div>
   );
