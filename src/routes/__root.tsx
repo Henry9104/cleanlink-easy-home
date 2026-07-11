@@ -71,9 +71,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-const TITLE = "CleanLink – Đặt người dọn nhanh cho homestay & mini hotel Quy Nhơn";
+const TITLE = "CleanLink – Đặt người dọn phòng nhanh tại Quy Nhơn";
 const DESC =
-  "CleanLink là nền tảng giúp chủ homestay, mini hotel và căn hộ thuê ngắn hạn tại Quy Nhơn đặt người dọn nhanh trong khung giờ check-out/check-in, có tracking, checklist và ảnh xác nhận.";
+  "CleanLink là nền tảng kết nối chủ homestay, khách sạn nhỏ, nhà nghỉ và căn hộ thuê ngắn hạn tại Quy Nhơn với người dọn phù hợp – biết giá trước, theo dõi tiến độ và kiểm tra chất lượng sau khi dọn.";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -82,7 +82,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: TITLE },
       { name: "description", content: DESC },
-      { name: "keywords", content: "dọn phòng homestay Quy Nhơn, đặt người dọn mini hotel, cleaning turnover, CleanLink" },
+      { name: "keywords", content: "dọn phòng homestay Quy Nhơn, đặt người dọn khách sạn nhỏ, nhà nghỉ, căn hộ ngắn hạn, CleanLink" },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "website" },
