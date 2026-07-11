@@ -10,8 +10,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/checklist")({
   head: () => ({
     meta: [
-      { title: "Checklist chất lượng – CleanLink" },
-      { name: "description", content: "Checklist 7 hạng mục chuẩn cho người dọn CleanLink – đảm bảo phòng homestay/mini hotel đạt tiêu chuẩn turnover." },
+      { title: "Danh sách công việc – CleanLink" },
+      { name: "description", content: "Danh sách 7 công việc chuẩn cho người dọn CleanLink – đánh dấu từng mục để đảm bảo không bỏ sót." },
     ],
   }),
   component: ChecklistPage,
@@ -30,13 +30,13 @@ function ChecklistPage() {
     <SiteLayout>
       <section className="mx-auto max-w-2xl px-4 md:px-6 py-10">
         <p className="text-xs font-medium text-primary uppercase tracking-wider">Đơn CL240712 · 5 phòng</p>
-        <h1 className="mt-1 text-3xl font-bold">Checklist chất lượng</h1>
-        <p className="mt-2 text-muted-foreground">Hoàn thành 7 hạng mục trước khi gửi ảnh xác nhận cho chủ cơ sở.</p>
+        <h1 className="mt-1 text-3xl font-bold">Danh sách công việc</h1>
+        <p className="mt-2 text-muted-foreground">Hoàn thành 7 công việc trước khi gửi hình ảnh xác nhận cho chủ cơ sở.</p>
 
         <div className="mt-6 rounded-2xl bg-card border border-border/60 shadow-card p-5">
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">Tiến độ</span>
-            <span className="font-bold text-primary">{done.length}/{checklistItems.length} hạng mục</span>
+            <span className="font-bold text-primary">{done.length}/{checklistItems.length} công việc đã hoàn thành</span>
           </div>
           <div className="mt-2 h-2.5 rounded-full bg-muted overflow-hidden">
             <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
@@ -67,14 +67,14 @@ function ChecklistPage() {
 
         <div className="mt-6 flex gap-3">
           <Button asChild variant="outline" className="rounded-full flex-1">
-            <Link to="/anh-xac-nhan">Chụp ảnh xác nhận</Link>
+            <Link to="/anh-xac-nhan">Gửi hình ảnh sau khi dọn</Link>
           </Button>
           <Button
             className="rounded-full flex-1"
             disabled={!allDone}
-            onClick={() => toast.success("Đã báo hoàn tất đơn cho chủ cơ sở")}
+            onClick={() => toast.success("Đã báo hoàn thành các công việc cho chủ cơ sở")}
           >
-            {allDone ? "Hoàn tất đơn" : `Còn ${checklistItems.length - done.length} hạng mục`}
+            {allDone ? "Hoàn thành các công việc" : `Còn ${checklistItems.length - done.length} công việc`}
           </Button>
         </div>
       </section>
