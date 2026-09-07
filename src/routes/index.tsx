@@ -10,7 +10,6 @@ import {
   MapPin,
   ArrowRight,
   UserCheck,
-  ShieldCheck,
   BadgeCheck,
   ClipboardCheck,
   Phone,
