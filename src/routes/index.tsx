@@ -103,35 +103,6 @@ function Home() {
             <div className="relative rounded-3xl overflow-hidden shadow-soft aspect-[4/3]">
               <img src={heroImg} alt="Phòng homestay Quy Nhơn sạch sẽ sau khi CleanLink hoàn tất" width={1600} height={1200} className="h-full w-full object-cover" />
             </div>
-            <div className="hidden md:block absolute -bottom-8 -left-6 rounded-2xl bg-white p-4 shadow-card w-80">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Người dọn đang đến cơ sở</p>
-              <div className="mt-2 flex items-center gap-3">
-                <img src={staffImg} alt="Người dọn CleanLink" width={48} height={48} loading="lazy" className="h-12 w-12 rounded-full object-cover" />
-                <div>
-                  <p className="text-sm font-semibold flex items-center gap-1">
-                    Nguyễn Thị Lan
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-xs font-normal text-muted-foreground">Đã xác minh</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">Dọn 5 phòng · Mai House Homestay</p>
-                </div>
-              </div>
-              <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                <p className="flex items-center gap-1"><MapPin className="h-3 w-3" /> 12 Xuân Diệu, Quy Nhơn</p>
-                <p className="flex items-center gap-1"><Clock3 className="h-3 w-3" /> Cách cơ sở khoảng 2,1 km · Dự kiến đến sau 8 phút</p>
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-1.5">
-                <Button asChild size="sm" variant="outline" className="rounded-full text-[11px] h-8 px-2">
-                  <Link to="/theo-doi-don">Trạng thái</Link>
-                </Button>
-                <Button asChild size="sm" variant="outline" className="rounded-full text-[11px] h-8 px-2">
-                  <Link to="/tin-nhan"><MessageCircle className="h-3 w-3 mr-0.5" />Nhắn tin</Link>
-                </Button>
-                <Button size="sm" className="rounded-full text-[11px] h-8 px-2">
-                  <Phone className="h-3 w-3 mr-0.5" />Gọi
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </section>
