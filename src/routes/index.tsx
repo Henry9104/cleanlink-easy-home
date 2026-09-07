@@ -12,11 +12,8 @@ import {
   UserCheck,
   BadgeCheck,
   ClipboardCheck,
-  Phone,
-  MessageCircle,
 } from "lucide-react";
 import heroImg from "@/assets/hero-clean.jpg";
-import staffImg from "@/assets/staff.jpg";
 import { services } from "@/lib/cleanlink-data";
 
 export const Route = createFileRoute("/")({
