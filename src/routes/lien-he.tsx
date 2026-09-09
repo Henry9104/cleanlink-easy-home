@@ -37,7 +37,7 @@ function ContactPage() {
         <div className="space-y-4">
           {[
             { icon: Phone, label: "Hotline", value: "0905 123 456" },
-            { icon: Mail, label: "Email", value: "support@cleanlink.vn" },
+            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com" },
             { icon: MapPin, label: "Văn phòng", value: "Trung tâm Quy Nhơn, Bình Định" },
             { icon: MessageCircle, label: "Zalo OA", value: "zalo.me/cleanlink" },
             { icon: Facebook, label: "Fanpage", value: "facebook.com/cleanlink.vn" },

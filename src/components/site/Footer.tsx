@@ -1,16 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles, Phone, Mail, MapPin } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import logoAsset from "@/assets/cleanlink-logo.jpg.asset.json";
 
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-border bg-gradient-soft">
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-14 grid gap-10 md:grid-cols-4">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 font-bold text-lg">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Sparkles className="h-5 w-5" />
-            </span>
-            CleanLink
+          <div className="flex items-center gap-2">
+            <img
+              src={logoAsset.url}
+              alt="CleanLink"
+              className="h-10 w-auto rounded-lg object-cover"
+            />
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
             CleanLink là nền tảng kết nối chủ cơ sở lưu trú với người dọn tại Quy Nhơn.
@@ -43,7 +45,7 @@ export function Footer() {
           <h4 className="font-semibold mb-3 text-sm">Liên hệ</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> 0905 123 456</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> support@cleanlink.vn</li>
+            <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> cleanlink.quynhon@gmail.com</li>
             <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Khu vực hoạt động: Quy Nhơn</li>
           </ul>
         </div>

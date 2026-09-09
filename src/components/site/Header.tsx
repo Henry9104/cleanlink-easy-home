@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Sparkles, Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import logoAsset from "@/assets/cleanlink-logo.jpg.asset.json";
 
 const primary = [
   { to: "/", label: "Trang chủ" },
@@ -35,13 +36,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-soft">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <span className="tracking-tight">
-            Clean<span className="text-primary">Link</span>
-          </span>
+        <Link to="/" className="flex items-center gap-2" aria-label="CleanLink">
+          <img
+            src={logoAsset.url}
+            alt="CleanLink"
+            className="h-10 w-auto rounded-lg object-cover"
+          />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1">
