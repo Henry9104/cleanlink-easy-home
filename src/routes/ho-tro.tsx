@@ -113,7 +113,7 @@ function SupportPage() {
           {[
             { icon: Phone, label: "Hotline 24/7", value: "0905 123 456" },
             { icon: MessageCircle, label: "Zalo OA", value: "zalo.me/cleanlink" },
-            { icon: Mail, label: "Email", value: "support@cleanlink.vn" },
+            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com" },
           ].map((c) => (
             <div key={c.label} className="flex items-start gap-4 rounded-2xl bg-card p-5 border border-border/60 shadow-card">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-mint/50 text-mint-foreground shrink-0">
