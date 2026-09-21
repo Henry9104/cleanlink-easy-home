@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, User, LogIn } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoAsset from "@/assets/cleanlink-logo.jpg.asset.json";
+import { useAuth } from "@/hooks/use-auth";
 
 const primary = [
   { to: "/", label: "Trang chủ" },
@@ -33,6 +34,7 @@ const more = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { isAuthenticated, profile } = useAuth();
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
@@ -74,6 +76,21 @@ export function Header() {
           <Button asChild variant="ghost" size="sm">
             <Link to="/admin">Quản trị</Link>
           </Button>
+          {isAuthenticated ? (
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link to="/tai-khoan">
+                <User className="h-4 w-4" />
+                {profile?.full_name?.split(" ").slice(-1)[0] || "Tài khoản"}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link to="/dang-nhap" search={{ next: undefined }}>
+                <LogIn className="h-4 w-4" />
+                Đăng nhập
+              </Link>
+            </Button>
+          )}
           <Button asChild size="sm" className="rounded-full shadow-soft">
             <Link to="/dat-lich">Đặt người dọn</Link>
           </Button>
@@ -101,6 +118,24 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
+            {isAuthenticated ? (
+              <Link
+                to="/tai-khoan"
+                onClick={() => setOpen(false)}
+                className="block px-3 py-2.5 rounded-md text-sm font-medium hover:bg-muted"
+              >
+                Tài khoản của tôi
+              </Link>
+            ) : (
+              <Link
+                to="/dang-nhap"
+                search={{ next: undefined }}
+                onClick={() => setOpen(false)}
+                className="block px-3 py-2.5 rounded-md text-sm font-medium hover:bg-muted"
+              >
+                Đăng nhập / Đăng ký
+              </Link>
+            )}
             <Button asChild className="w-full mt-2 rounded-full">
               <Link to="/dat-lich" onClick={() => setOpen(false)}>Đặt người dọn</Link>
             </Button>
