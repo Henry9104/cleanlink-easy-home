@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoAsset from "@/assets/cleanlink-logo.jpg.asset.json";
+import { useAuth } from "@/hooks/use-auth";
 
 const primary = [
   { to: "/", label: "Trang chủ" },
