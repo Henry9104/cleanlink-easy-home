@@ -45,7 +45,7 @@ function AccountPage() {
     queryClient.clear();
     await supabase.auth.signOut();
     toast.success("Bạn đã đăng xuất.");
-    void navigate({ to: "/dang-nhap", replace: true });
+    void navigate({ to: "/dang-nhap", search: {}, replace: true });
   }
 
   if (loading || !user) {

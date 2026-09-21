@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TinNhanRouteImport } from './routes/tin-nhan'
 import { Route as TheoDoiDonRouteImport } from './routes/theo-doi-don'
 import { Route as ThanhToanRouteImport } from './routes/thanh-toan'
+import { Route as TaiKhoanRouteImport } from './routes/tai-khoan'
 import { Route as QuyTrinhRouteImport } from './routes/quy-trinh'
 import { Route as NguoiDonRouteImport } from './routes/nguoi-don'
 import { Route as LienHeRouteImport } from './routes/lien-he'
@@ -40,6 +41,11 @@ const TheoDoiDonRoute = TheoDoiDonRouteImport.update({
 const ThanhToanRoute = ThanhToanRouteImport.update({
   id: '/thanh-toan',
   path: '/thanh-toan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TaiKhoanRoute = TaiKhoanRouteImport.update({
+  id: '/tai-khoan',
+  path: '/tai-khoan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuyTrinhRoute = QuyTrinhRouteImport.update({
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/lien-he': typeof LienHeRoute
   '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/lien-he': typeof LienHeRoute
   '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/lien-he': typeof LienHeRoute
   '/nguoi-don': typeof NguoiDonRoute
   '/quy-trinh': typeof QuyTrinhRoute
+  '/tai-khoan': typeof TaiKhoanRoute
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/lien-he'
     | '/nguoi-don'
     | '/quy-trinh'
+    | '/tai-khoan'
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/lien-he'
     | '/nguoi-don'
     | '/quy-trinh'
+    | '/tai-khoan'
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/lien-he'
     | '/nguoi-don'
     | '/quy-trinh'
+    | '/tai-khoan'
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   LienHeRoute: typeof LienHeRoute
   NguoiDonRoute: typeof NguoiDonRoute
   QuyTrinhRoute: typeof QuyTrinhRoute
+  TaiKhoanRoute: typeof TaiKhoanRoute
   ThanhToanRoute: typeof ThanhToanRoute
   TheoDoiDonRoute: typeof TheoDoiDonRoute
   TinNhanRoute: typeof TinNhanRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/thanh-toan'
       fullPath: '/thanh-toan'
       preLoaderRoute: typeof ThanhToanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tai-khoan': {
+      id: '/tai-khoan'
+      path: '/tai-khoan'
+      fullPath: '/tai-khoan'
+      preLoaderRoute: typeof TaiKhoanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quy-trinh': {
@@ -390,6 +410,7 @@ const rootRouteChildren: RootRouteChildren = {
   LienHeRoute: LienHeRoute,
   NguoiDonRoute: NguoiDonRoute,
   QuyTrinhRoute: QuyTrinhRoute,
+  TaiKhoanRoute: TaiKhoanRoute,
   ThanhToanRoute: ThanhToanRoute,
   TheoDoiDonRoute: TheoDoiDonRoute,
   TinNhanRoute: TinNhanRoute,
