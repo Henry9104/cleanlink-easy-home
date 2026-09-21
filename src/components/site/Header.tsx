@@ -74,6 +74,21 @@ export function Header() {
           <Button asChild variant="ghost" size="sm">
             <Link to="/admin">Quản trị</Link>
           </Button>
+          {isAuthenticated ? (
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link to="/tai-khoan">
+                <User className="h-4 w-4" />
+                {profile?.full_name?.split(" ").slice(-1)[0] || "Tài khoản"}
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild variant="outline" size="sm" className="rounded-full">
+              <Link to="/dang-nhap" search={{ next: undefined }}>
+                <LogIn className="h-4 w-4" />
+                Đăng nhập
+              </Link>
+            </Button>
+          )}
           <Button asChild size="sm" className="rounded-full shadow-soft">
             <Link to="/dat-lich">Đặt người dọn</Link>
           </Button>
