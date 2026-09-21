@@ -21,6 +21,7 @@ import { Route as GiaDuKienRouteImport } from './routes/gia-du-kien'
 import { Route as DichVuRouteImport } from './routes/dich-vu'
 import { Route as DatLichRouteImport } from './routes/dat-lich'
 import { Route as DanhGiaRouteImport } from './routes/danh-gia'
+import { Route as DangNhapRouteImport } from './routes/dang-nhap'
 import { Route as ChecklistRouteImport } from './routes/checklist'
 import { Route as AnhXacNhanRouteImport } from './routes/anh-xac-nhan'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -86,6 +87,11 @@ const DanhGiaRoute = DanhGiaRouteImport.update({
   path: '/danh-gia',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DangNhapRoute = DangNhapRouteImport.update({
+  id: '/dang-nhap',
+  path: '/dang-nhap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChecklistRoute = ChecklistRouteImport.update({
   id: '/checklist',
   path: '/checklist',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/anh-xac-nhan': typeof AnhXacNhanRoute
   '/checklist': typeof ChecklistRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -130,6 +137,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/anh-xac-nhan': typeof AnhXacNhanRoute
   '/checklist': typeof ChecklistRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/anh-xac-nhan': typeof AnhXacNhanRoute
   '/checklist': typeof ChecklistRoute
+  '/dang-nhap': typeof DangNhapRoute
   '/danh-gia': typeof DanhGiaRoute
   '/dat-lich': typeof DatLichRoute
   '/dich-vu': typeof DichVuRoute
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anh-xac-nhan'
     | '/checklist'
+    | '/dang-nhap'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anh-xac-nhan'
     | '/checklist'
+    | '/dang-nhap'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anh-xac-nhan'
     | '/checklist'
+    | '/dang-nhap'
     | '/danh-gia'
     | '/dat-lich'
     | '/dich-vu'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AnhXacNhanRoute: typeof AnhXacNhanRoute
   ChecklistRoute: typeof ChecklistRoute
+  DangNhapRoute: typeof DangNhapRoute
   DanhGiaRoute: typeof DanhGiaRoute
   DatLichRoute: typeof DatLichRoute
   DichVuRoute: typeof DichVuRoute
@@ -324,6 +337,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DanhGiaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dang-nhap': {
+      id: '/dang-nhap'
+      path: '/dang-nhap'
+      fullPath: '/dang-nhap'
+      preLoaderRoute: typeof DangNhapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checklist': {
       id: '/checklist'
       path: '/checklist'
@@ -360,6 +380,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AnhXacNhanRoute: AnhXacNhanRoute,
   ChecklistRoute: ChecklistRoute,
+  DangNhapRoute: DangNhapRoute,
   DanhGiaRoute: DanhGiaRoute,
   DatLichRoute: DatLichRoute,
   DichVuRoute: DichVuRoute,
