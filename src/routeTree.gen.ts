@@ -27,6 +27,7 @@ import { Route as ChecklistRouteImport } from './routes/checklist'
 import { Route as AnhXacNhanRouteImport } from './routes/anh-xac-nhan'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DonIdRouteImport } from './routes/don.$id'
 
 const TinNhanRoute = TinNhanRouteImport.update({
   id: '/tin-nhan',
@@ -118,6 +119,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DonIdRoute = DonIdRouteImport.update({
+  id: '/don/$id',
+  path: '/don/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
+  '/don/$id': typeof DonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
+  '/don/$id': typeof DonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/thanh-toan': typeof ThanhToanRoute
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
+  '/don/$id': typeof DonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
+    | '/don/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
+    | '/don/$id'
   id:
     | '__root__'
     | '/'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/thanh-toan'
     | '/theo-doi-don'
     | '/tin-nhan'
+    | '/don/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -262,6 +274,7 @@ export interface RootRouteChildren {
   ThanhToanRoute: typeof ThanhToanRoute
   TheoDoiDonRoute: typeof TheoDoiDonRoute
   TinNhanRoute: typeof TinNhanRoute
+  DonIdRoute: typeof DonIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/don/$id': {
+      id: '/don/$id'
+      path: '/don/$id'
+      fullPath: '/don/$id'
+      preLoaderRoute: typeof DonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -414,6 +434,7 @@ const rootRouteChildren: RootRouteChildren = {
   ThanhToanRoute: ThanhToanRoute,
   TheoDoiDonRoute: TheoDoiDonRoute,
   TinNhanRoute: TinNhanRoute,
+  DonIdRoute: DonIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

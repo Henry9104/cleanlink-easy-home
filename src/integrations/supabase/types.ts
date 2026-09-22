@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          accepted_at: string | null
+          addons: string[]
+          address: string
+          area: string
+          checklist_done: string[]
+          cleaner_id: string | null
+          cleaner_name: string | null
+          code: string
+          completed_at: string | null
+          created_at: string
+          host_id: string
+          id: string
+          note: string | null
+          phone: string
+          photo_after: string | null
+          photo_before: string | null
+          photo_sent_at: string | null
+          price: number
+          property_name: string
+          property_type: string
+          room_type: string
+          rooms: number
+          service_date: string
+          status: string
+          time_slot: string
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          addons?: string[]
+          address: string
+          area?: string
+          checklist_done?: string[]
+          cleaner_id?: string | null
+          cleaner_name?: string | null
+          code: string
+          completed_at?: string | null
+          created_at?: string
+          host_id: string
+          id?: string
+          note?: string | null
+          phone: string
+          photo_after?: string | null
+          photo_before?: string | null
+          photo_sent_at?: string | null
+          price?: number
+          property_name: string
+          property_type?: string
+          room_type?: string
+          rooms?: number
+          service_date?: string
+          status?: string
+          time_slot?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          addons?: string[]
+          address?: string
+          area?: string
+          checklist_done?: string[]
+          cleaner_id?: string | null
+          cleaner_name?: string | null
+          code?: string
+          completed_at?: string | null
+          created_at?: string
+          host_id?: string
+          id?: string
+          note?: string | null
+          phone?: string
+          photo_after?: string | null
+          photo_before?: string | null
+          photo_sent_at?: string | null
+          price?: number
+          property_name?: string
+          property_type?: string
+          room_type?: string
+          rooms?: number
+          service_date?: string
+          status?: string
+          time_slot?: string
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           area: string | null
@@ -43,6 +133,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          booking_id: string
+          cleaner_id: string | null
+          comment: string | null
+          created_at: string
+          host_id: string
+          id: string
+          rating: number
+        }
+        Insert: {
+          booking_id: string
+          cleaner_id?: string | null
+          comment?: string | null
+          created_at?: string
+          host_id: string
+          id?: string
+          rating?: number
+        }
+        Update: {
+          booking_id?: string
+          cleaner_id?: string | null
+          comment?: string | null
+          created_at?: string
+          host_id?: string
+          id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
