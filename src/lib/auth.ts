@@ -15,7 +15,7 @@ export function isValidPhone(input: string): boolean {
 
 /** Số điện thoại được dùng làm định danh đăng nhập nội bộ */
 export function phoneToEmail(phone: string): string {
-  return `${normalizePhone(phone)}@cleanlink.local`;
+  return `${normalizePhone(phone)}@cleanlink.vn`;
 }
 
 export const roleLabel: Record<AppRole, string> = {
