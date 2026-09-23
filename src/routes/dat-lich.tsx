@@ -25,7 +25,10 @@ import {
 } from "@/lib/cleanlink-data";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { newBookingCode } from "@/lib/bookings";
 
 export const Route = createFileRoute("/dat-lich")({
   head: () => ({
