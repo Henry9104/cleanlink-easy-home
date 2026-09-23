@@ -21,7 +21,7 @@ import {
   addonOptions,
   estimatePrice,
   formatVND,
-  labelFrom,
+  } from "@/lib/cleanlink-data";
 } from "@/lib/cleanlink-data";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -281,8 +281,8 @@ function BookingPage() {
             <Textarea id="note" name="note" rows={3} placeholder="Mã cửa, chỗ để chìa khoá, khu vực cần chú ý…" className="mt-1.5" />
           </div>
 
-          <Button type="submit" size="lg" className="w-full rounded-full">
-            Xác nhận đặt lịch · {formatVND(price.total)} <ArrowRight className="ml-1 h-4 w-4" />
+          <Button type="submit" size="lg" className="w-full rounded-full" disabled={saving}>
+            {saving ? "Đang tạo đơn…" : `Xác nhận đặt lịch · ${formatVND(price.total)}`} <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </form>
 
@@ -329,14 +329,5 @@ function BookingPage() {
         </aside>
       </section>
     </SiteLayout>
-  );
-}
-
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="text-right">{v}</span>
-    </div>
   );
 }
