@@ -1,21 +1,96 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
-import { sampleJobs, formatVND, labelFrom, areas, timeSlots } from "@/lib/cleanlink-data";
-import { MapPin, Clock, Wallet, Zap, Navigation, Check, X, Home } from "lucide-react";
-import { toast } from "sonner";
+import { MapPin, Clock, Wallet, Zap, Check, Home, ArrowRight } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { acceptJob, fetchCleanerBookings, type BookingRow } from "@/lib/bookings";
+import {
+  areas,
+  timeSlots,
+  labelFrom,
+  formatVND,
+  statusLabel,
+  statusColor,
+  type BookingStatus,
+} from "@/lib/cleanlink-data";
+
+const TITLE = "Công việc mới gần bạn – CleanLink cho người dọn";
+const DESC =
+  "Trang dành cho người dọn CleanLink: xem công việc mới tại Quy Nhơn, nhận việc, làm danh sách công việc và gửi hình ảnh sau khi dọn.";
 
 export const Route = createFileRoute("/nguoi-don")({
+  ssr: false,
   head: () => ({
     meta: [
-      { title: "Công việc mới gần bạn – CleanLink cho người dọn" },
-      { name: "description", content: "Trang dành cho người dọn CleanLink: xem công việc mới gần bạn, yêu cầu công việc, thu nhập dự kiến và nhận việc." },
+      { title: TITLE },
+      { name: "description", content: DESC },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESC },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: CleanerPage,
 });
 
 function CleanerPage() {
+  const { user, profile, role, loading: authLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [rows, setRows] = useState<BookingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      void navigate({ to: "/dang-nhap", search: { next: "/nguoi-don" }, replace: true });
+    }
+  }, [authLoading, isAuthenticated, navigate]);
+
+  async function reload() {
+    const r = await fetchCleanerBookings();
+    setRows(r);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    void reload();
+  }, [user]);
+
+  const openJobs = rows.filter((b) => !b.cleaner_id && b.status === "searching");
+  const myJobs = rows.filter((b) => b.cleaner_id === user?.id);
+
+  async function onAccept(b: BookingRow) {
+    if (!user) return;
+    setBusy(b.id);
+    try {
+      await acceptJob(b.id, user.id, profile?.full_name || "Người dọn CleanLink");
+      toast.success(`Bạn đã nhận công việc ${b.code}`);
+      await reload();
+      void navigate({ to: "/don/$id", params: { id: b.id } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không nhận được công việc này");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (!authLoading && isAuthenticated && role && role !== "cleaner") {
+    return (
+      <SiteLayout>
+        <section className="mx-auto max-w-3xl px-4 py-20 text-center">
+          <h1 className="text-2xl font-bold">Trang dành cho người dọn</h1>
+          <p className="mt-2 text-muted-foreground">
+            Tài khoản của bạn đang đăng ký là chủ cơ sở lưu trú. Bạn có thể đặt người dọn cho cơ sở của mình.
+          </p>
+          <Button asChild className="mt-6 rounded-full"><Link to="/dat-lich">Đặt người dọn</Link></Button>
+        </section>
+      </SiteLayout>
+    );
+  }
+
   return (
     <SiteLayout>
       <section className="bg-gradient-hero">
@@ -24,98 +99,113 @@ function CleanerPage() {
             <div>
               <p className="text-xs font-medium text-primary uppercase tracking-wider">Người dọn CleanLink</p>
               <h1 className="mt-1 text-3xl md:text-4xl font-bold">Công việc mới gần bạn</h1>
-              <p className="mt-2 text-muted-foreground">Hôm nay có {sampleJobs.length} công việc phù hợp với khu vực Quy Nhơn.</p>
+              <p className="mt-2 text-muted-foreground">
+                {loading ? "Đang tải công việc…" : `Hiện có ${openJobs.length} công việc đang chờ người dọn tại Quy Nhơn.`}
+              </p>
             </div>
             <div className="rounded-2xl bg-white/70 backdrop-blur px-4 py-3 shadow-card">
-              <p className="text-xs text-muted-foreground">Thu nhập tuần này</p>
-              <p className="text-xl font-bold text-primary">2.480.000đ</p>
+              <p className="text-xs text-muted-foreground">Công việc của tôi</p>
+              <p className="text-xl font-bold text-primary">{myJobs.length}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-4 md:px-6 py-10 space-y-4">
-        {sampleJobs.map((j) => (
-          <article key={j.id} className="rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold">Dọn {j.rooms} phòng tại {j.property}</h2>
-                  {j.urgency === "urgent" && (
-                    <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 font-medium">
-                      <Zap className="h-3 w-3" /> Gấp
-                    </span>
-                  )}
+      <section className="mx-auto max-w-5xl px-4 md:px-6 py-10 space-y-8">
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Công việc đang chờ nhận</h2>
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Đang tải…</p>
+          ) : openJobs.length === 0 ? (
+            <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground shadow-card">
+              Hiện chưa có công việc mới. Hãy quay lại vào khung giờ khách trả phòng (11:00 – 14:00).
+            </div>
+          ) : (
+            openJobs.map((b) => (
+              <article key={b.id} className="rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-semibold">Dọn {b.rooms} phòng tại {b.property_name}</h3>
+                      {b.urgency === "urgent" && (
+                        <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 font-medium">
+                          <Zap className="h-3 w-3" /> Gấp
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" /> {b.address} · {labelFrom(areas, b.area)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
+                      <Home className="h-3 w-3" /> {b.room_type === "kitchen" ? "Phòng lớn / có bếp" : "Phòng tiêu chuẩn"}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-mint/40 text-mint-foreground text-xs px-3 py-1 font-medium font-mono">{b.code}</span>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" /> {j.address} · {labelFrom(areas, j.area)}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                  <Home className="h-3 w-3" /> {j.roomType === "kitchen" ? "Phòng lớn / có bếp" : "Phòng tiêu chuẩn"}
-                </p>
-              </div>
-              <span className="rounded-full bg-mint/40 text-mint-foreground text-xs px-3 py-1 font-medium">{j.id}</span>
-            </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-muted/60 p-3">
-                <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Khung giờ</p>
-                <p className="mt-0.5 font-semibold">{labelFrom(timeSlots, j.timeSlot)}</p>
-              </div>
-              <div className="rounded-xl bg-muted/60 p-3">
-                <p className="text-xs text-muted-foreground flex items-center gap-1"><Wallet className="h-3 w-3" /> Thu nhập dự kiến</p>
-                <p className="mt-0.5 font-semibold text-primary">
-                  {j.earnMin === j.earnMax ? formatVND(j.earnMin) : `${formatVND(j.earnMin)} – ${formatVND(j.earnMax)}`}
-                </p>
-              </div>
-              <div className="rounded-xl bg-muted/60 p-3">
-                <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation className="h-3 w-3" /> Khoảng cách</p>
-                <p className="mt-0.5 font-semibold">Cách bạn ~ {j.distanceKm} km</p>
-              </div>
-            </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl bg-muted/60 p-3">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Ngày & khung giờ</p>
+                    <p className="mt-0.5 font-semibold text-sm">{b.service_date} · {labelFrom(timeSlots, b.time_slot)}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/60 p-3">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Wallet className="h-3 w-3" /> Giá trị đơn</p>
+                    <p className="mt-0.5 font-semibold text-sm text-primary">{formatVND(b.price)}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/60 p-3">
+                    <p className="text-xs text-muted-foreground">Liên hệ chủ cơ sở</p>
+                    <p className="mt-0.5 font-semibold text-sm">{b.phone}</p>
+                  </div>
+                </div>
 
-            <div className="mt-4 rounded-xl border border-border/60 bg-mint/20 p-3">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Yêu cầu công việc</p>
-              <ul className="mt-2 space-y-1 text-sm">
-                {j.requirements.map((req) => (
-                  <li key={req} className="flex items-start gap-2">
-                    <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
-                    <span>{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                {b.note && (
+                  <p className="mt-4 rounded-xl border border-border/60 bg-mint/20 p-3 text-sm">
+                    <span className="font-medium">Ghi chú: </span>{b.note}
+                  </p>
+                )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button
-                onClick={() => toast.success(`Đã nhận việc ${j.id}`)}
-                className="rounded-full"
-              >
-                <Check className="mr-1 h-4 w-4" /> Nhận việc
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => toast("Đã từ chối", { description: j.id })}
-                className="rounded-full"
-              >
-                <X className="mr-1 h-4 w-4" /> Từ chối
-              </Button>
-              <Button variant="ghost" className="rounded-full">
-                <Navigation className="mr-1 h-4 w-4" /> Xem chỉ đường
-              </Button>
-            </div>
-          </article>
-        ))}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button className="rounded-full" disabled={busy === b.id} onClick={() => void onAccept(b)}>
+                    <Check className="mr-1 h-4 w-4" /> Nhận việc
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-full">
+                    <Link to="/don/$id" params={{ id: b.id }}>Xem chi tiết</Link>
+                  </Button>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
 
-        <div className="mt-8 rounded-2xl bg-mint/40 border border-mint p-5 flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <p className="font-semibold">Sau khi bắt đầu dọn</p>
-            <p className="text-sm text-muted-foreground">Đánh dấu 7 công việc trong danh sách và gửi hình ảnh sau khi hoàn tất.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" className="rounded-full"><Link to="/checklist">Danh sách công việc</Link></Button>
-            <Button asChild className="rounded-full"><Link to="/anh-xac-nhan">Gửi hình ảnh</Link></Button>
-          </div>
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold">Công việc tôi đã nhận</h2>
+          {myJobs.length === 0 ? (
+            <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground shadow-card">
+              Bạn chưa nhận công việc nào.
+            </div>
+          ) : (
+            myJobs.map((b) => {
+              const status = b.status as BookingStatus;
+              return (
+                <article key={b.id} className="rounded-2xl bg-card border border-border/60 shadow-card p-5 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold">Dọn {b.rooms} phòng · {b.property_name}</p>
+                    <p className="text-sm text-muted-foreground">{b.address} · {labelFrom(timeSlots, b.time_slot)}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusColor[status]}`}>
+                      {statusLabel[status]}
+                    </span>
+                    <Button asChild className="rounded-full">
+                      <Link to="/don/$id" params={{ id: b.id }}>
+                        Tiếp tục <ArrowRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
       </section>
     </SiteLayout>

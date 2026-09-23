@@ -21,11 +21,13 @@ import {
   addonOptions,
   estimatePrice,
   formatVND,
-  labelFrom,
 } from "@/lib/cleanlink-data";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { newBookingCode } from "@/lib/bookings";
 
 export const Route = createFileRoute("/dat-lich")({
   head: () => ({
@@ -44,16 +46,8 @@ function todayISO() {
 
 function BookingPage() {
   const navigate = useNavigate();
-  const [submitted, setSubmitted] = useState<{
-    id: string;
-    total: number;
-    propertyName: string;
-    address: string;
-    rooms: number;
-    roomType: "standard" | "kitchen";
-    timeSlot: string;
-    urgency: "normal" | "urgent";
-  } | null>(null);
+  const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
+  const [saving, setSaving] = useState(false);
 
   const [propertyType, setPropertyType] = useState("homestay");
   const [roomType, setRoomType] = useState<"standard" | "kitchen">("standard");
@@ -69,68 +63,59 @@ function BookingPage() {
     setAddons((a) => (a.includes(v) ? a.filter((x) => x !== v) : [...a, v]));
   }
 
-  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const propertyName = String(fd.get("propertyName") || "").trim();
     const address = String(fd.get("address") || "").trim();
     const phone = String(fd.get("phone") || "").trim();
+    const date = String(fd.get("date") || todayISO());
+    const note = String(fd.get("note") || "").trim();
     if (!propertyName || !address || !phone) {
       toast.error("Vui lòng điền đủ tên cơ sở, địa chỉ và số điện thoại");
       return;
     }
-    const id = `CL${Date.now().toString().slice(-6)}`;
-    toast.success("Đã tạo đơn – đang tìm người dọn phù hợp");
-    setSubmitted({ id, total: price.total, propertyName, address, rooms, roomType, timeSlot, urgency });
+    if (authLoading) return;
+    if (!isAuthenticated || !user) {
+      toast.error("Vui lòng đăng nhập bằng tài khoản chủ cơ sở để tạo đơn");
+      void navigate({ to: "/dang-nhap", search: { next: "/dat-lich" } });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .insert({
+          code: newBookingCode(),
+          host_id: user.id,
+          property_name: propertyName || profile?.property_name || "",
+          property_type: propertyType,
+          area,
+          address,
+          phone,
+          rooms,
+          room_type: roomType,
+          service_date: date,
+          time_slot: timeSlot,
+          urgency,
+          addons,
+          note: note || null,
+          price: price.total,
+          status: "searching",
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      toast.success("Đã tạo đơn – đang tìm người dọn phù hợp");
+      void navigate({ to: "/don/$id", params: { id: data.id } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Không tạo được đơn, vui lòng thử lại");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (submitted) {
-    return (
-      <SiteLayout>
-        <section className="mx-auto max-w-2xl px-4 md:px-6 py-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-mint/60 text-primary">
-            <CheckCircle2 className="h-8 w-8" />
-          </div>
-          <h1 className="mt-6 text-3xl font-bold">Đơn đặt dọn đã được tạo</h1>
-          <p className="mt-3 text-muted-foreground">
-            CleanLink đang tìm người dọn phù hợp. Bạn có thể theo dõi tiến độ ngay bên dưới.
-          </p>
-          <div className="mt-6 rounded-2xl border border-border/60 bg-card p-5 shadow-card text-left space-y-2 text-sm">
-            <Row k="Mã đơn" v={<span className="font-mono font-semibold">{submitted.id}</span>} />
-            <Row k="Cơ sở" v={submitted.propertyName} />
-            <Row k="Dịch vụ" v={submitted.roomType === "kitchen" ? "Dọn phòng lớn / có bếp" : "Dọn phòng tiêu chuẩn"} />
-            <Row k="Địa chỉ" v={submitted.address} />
-            <Row k="Số phòng" v={`${submitted.rooms} phòng`} />
-            <Row k="Khung giờ" v={labelFrom(timeSlots, submitted.timeSlot)} />
-            <Row k="Mức độ" v={submitted.urgency === "urgent" ? "Gấp" : "Bình thường"} />
-            <Row k="Giá dự kiến" v={<span className="font-semibold text-primary">{formatVND(submitted.total)}</span>} />
-            <div className="pt-2 border-t border-border/40 flex justify-between">
-              <span className="text-muted-foreground">Trạng thái</span>
-              <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-medium border border-amber-200">
-                Đang tìm người dọn
-              </span>
-            </div>
-          </div>
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <Button onClick={() => navigate({ to: "/theo-doi-don" })} className="rounded-full">Theo dõi đơn</Button>
-            <Button asChild variant="outline" className="rounded-full">
-              <Link to="/ho-tro">Liên hệ hỗ trợ</Link>
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                toast("Đã huỷ đơn", { description: submitted.id });
-                setSubmitted(null);
-              }}
-              className="rounded-full text-rose-600 hover:text-rose-700"
-            >
-              Huỷ đơn
-            </Button>
-          </div>
-        </section>
-      </SiteLayout>
-    );
-  }
 
   return (
     <SiteLayout>
@@ -295,8 +280,8 @@ function BookingPage() {
             <Textarea id="note" name="note" rows={3} placeholder="Mã cửa, chỗ để chìa khoá, khu vực cần chú ý…" className="mt-1.5" />
           </div>
 
-          <Button type="submit" size="lg" className="w-full rounded-full">
-            Xác nhận đặt lịch · {formatVND(price.total)} <ArrowRight className="ml-1 h-4 w-4" />
+          <Button type="submit" size="lg" className="w-full rounded-full" disabled={saving}>
+            {saving ? "Đang tạo đơn…" : `Xác nhận đặt lịch · ${formatVND(price.total)}`} <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </form>
 
@@ -343,14 +328,5 @@ function BookingPage() {
         </aside>
       </section>
     </SiteLayout>
-  );
-}
-
-function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3">
-      <span className="text-muted-foreground">{k}</span>
-      <span className="text-right">{v}</span>
-    </div>
   );
 }
