@@ -29,6 +29,13 @@
       "when": 1790088752221,
       "tag": "0003_booking_photos_storage_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791795254421,
+      "tag": "0004_admin_view_all",
+      "breakpoints": true
     }
   ]
 }
