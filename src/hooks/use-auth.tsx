@@ -16,6 +16,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,16 +48,19 @@ export function useAuth() {
           .select("id, phone, full_name, property_name, area")
           .eq("id", user.id)
           .maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
       ]);
       if (!active) return;
       setProfile((p as AuthProfile | null) ?? null);
-      setRole(((r?.role as AppRole | undefined) ?? null));
+      const roles = (r ?? []).map((x) => x.role as string);
+      setIsAdmin(roles.includes("admin"));
+      const main = roles.find((x) => x === "host" || x === "cleaner");
+      setRole((main as AppRole | undefined) ?? null);
     })();
     return () => {
       active = false;
     };
   }, [user]);
 
-  return { session, user, profile, role, loading, isAuthenticated: !!user };
+  return { session, user, profile, role, isAdmin, loading, isAuthenticated: !!user };
 }
