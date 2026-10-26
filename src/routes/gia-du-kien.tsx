@@ -15,11 +15,21 @@ import { useState } from "react";
 import {
   estimatePrice,
   formatVND,
-  ROOM_PRICE,
-  urgentFee,
   areas,
   timeSlots,
   labelFrom,
+  roomTypeLabel,
+  ROOM_PRICING,
+  ROOM_PRICE_ORDER,
+  ROOM_EXAMPLE,
+  ROOM_COUNT_PRICING,
+  ROOM_COUNT_CONTRACT_THRESHOLD,
+  HOURLY_PRICING,
+  AREA_PRICING,
+  SURCHARGES,
+  URGENT_FEE,
+  type PriceSplit,
+  type RoomTypeKey,
 } from "@/lib/cleanlink-data";
 import { Zap, Info } from "lucide-react";
 
@@ -27,38 +37,74 @@ export const Route = createFileRoute("/gia-du-kien")({
   head: () => ({
     meta: [
       { title: "Giá dự kiến – CleanLink Quy Nhơn" },
-      { name: "description", content: "Ước tính giá dọn phòng theo loại phòng, số phòng và phụ phí dọn gấp cho cơ sở lưu trú tại Quy Nhơn." },
+      { name: "description", content: "Bảng giá dọn phòng lưu trú, dọn nhà ở theo giờ, theo diện tích và phụ thu của CleanLink tại Quy Nhơn, Gia Lai." },
     ],
   }),
   component: PricingPage,
 });
 
-const priceRows = [
-  { rooms: 1 },
-  { rooms: 2 },
-  { rooms: 3 },
-  { rooms: 4 },
-  { rooms: 5 },
-];
+function money(v: number | null, fallback: string) {
+  return v === null ? fallback : formatVND(v);
+}
 
-const urgentRows = [
-  { label: "1 – 2 phòng", fee: 20000 },
-  { label: "3 – 4 phòng", fee: 35000 },
-  { label: "Từ 5 phòng", fee: 50000 },
-];
+type SplitRow = PriceSplit & { label: string };
+
+function SplitTable({
+  title,
+  description,
+  firstColumn,
+  rows,
+  customerFallback,
+}: {
+  title: string;
+  description?: string;
+  firstColumn: string;
+  rows: SplitRow[];
+  customerFallback: string;
+}) {
+  return (
+    <div className="rounded-3xl bg-card border border-border/60 shadow-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-border/60">
+        <h2 className="font-semibold">{title}</h2>
+        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/40 text-xs text-muted-foreground">
+            <tr>
+              <th className="text-left px-6 py-3 font-medium">{firstColumn}</th>
+              <th className="text-right px-6 py-3 font-medium">Khách trả</th>
+              <th className="text-right px-6 py-3 font-medium">Người dọn nhận</th>
+              <th className="text-right px-6 py-3 font-medium">CleanLink thu</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <td className="px-6 py-3 font-medium">{r.label}</td>
+                <td className="px-6 py-3 text-right text-primary font-medium">{money(r.customer, customerFallback)}</td>
+                <td className="px-6 py-3 text-right">{money(r.cleaner, "Theo thỏa thuận")}</td>
+                <td className="px-6 py-3 text-right">{money(r.platform, "Theo thỏa thuận")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function PricingPage() {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState(3);
   const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
-  const [roomType, setRoomType] = useState<"standard" | "kitchen">("standard");
+  const [roomType, setRoomType] = useState<RoomTypeKey>("standard");
   const [propertyName, setPropertyName] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("trung_tam");
   const [timeSlot, setTimeSlot] = useState("13-14");
 
   const price = estimatePrice(rooms, urgency, roomType);
-  const overLimit = rooms > 5;
 
   return (
     <SiteLayout>
@@ -66,85 +112,114 @@ function PricingPage() {
         <div className="mx-auto max-w-3xl px-4 md:px-6 py-16 text-center">
           <h1 className="text-4xl md:text-5xl font-bold">Giá dự kiến</h1>
           <p className="mt-4 text-muted-foreground">
-            Giá tính theo loại phòng và số phòng, phụ phí dọn gấp hiển thị rõ – biết trước khi xác nhận.
+            Giá tính theo loại phòng và số phòng, phụ thu hiển thị rõ – biết trước khi xác nhận.
           </p>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 md:px-6 py-14 grid gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-8">
-          {/* Bảng giá theo số phòng */}
+          {/* Bảng 1: Giá dọn phòng lưu trú */}
+          <SplitTable
+            title="Bảng 1: Giá dọn phòng lưu trú"
+            description="Áp dụng cho dọn phòng thông thường, thay ga có sẵn, thu gom rác, lau sàn và vệ sinh nhà tắm."
+            firstColumn="Loại phòng"
+            rows={ROOM_PRICE_ORDER.map((k) => ROOM_PRICING[k])}
+            customerFallback="Báo giá riêng"
+          />
+
+          {/* Ví dụ minh họa */}
+          <div className="rounded-3xl bg-gradient-soft border border-border/60 p-6">
+            <h2 className="font-semibold">Ví dụ minh họa</h2>
+            <ul className="mt-4 space-y-2 text-sm">
+              <li className="flex justify-between border-b border-border/40 pb-2">
+                <span>Tổng tiền khách thanh toán</span>
+                <span className="font-semibold">{formatVND(ROOM_EXAMPLE.customerTotal)}</span>
+              </li>
+              <li className="flex justify-between border-b border-border/40 pb-2">
+                <span>Tổng tiền người dọn nhận</span>
+                <span className="font-semibold">{formatVND(ROOM_EXAMPLE.cleanerTotal)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span>Doanh thu phí nền tảng CleanLink</span>
+                <span className="font-semibold text-primary">{formatVND(ROOM_EXAMPLE.platformTotal)}</span>
+              </li>
+            </ul>
+            <p className="mt-4 text-xs text-muted-foreground">{ROOM_EXAMPLE.note}</p>
+          </div>
+
+          {/* Bảng 2: Giá theo số lượng phòng */}
           <div className="rounded-3xl bg-card border border-border/60 shadow-card overflow-hidden">
             <div className="px-6 py-4 border-b border-border/60">
-              <h2 className="font-semibold">Bảng giá theo số phòng</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Không áp dụng giảm giá theo số phòng ở giai đoạn hiện tại.</p>
+              <h2 className="font-semibold">Bảng 2: Giá theo số lượng phòng</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Áp dụng cho phòng tiêu chuẩn.</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs text-muted-foreground">
                   <tr>
                     <th className="text-left px-6 py-3 font-medium">Số phòng</th>
-                    <th className="text-right px-6 py-3 font-medium">Tiêu chuẩn ({formatVND(ROOM_PRICE.standard)}/phòng)</th>
-                    <th className="text-right px-6 py-3 font-medium">Phòng lớn / có bếp ({formatVND(ROOM_PRICE.kitchen)}/phòng)</th>
+                    <th className="text-right px-6 py-3 font-medium">Giá</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {priceRows.map((r) => (
+                  {ROOM_COUNT_PRICING.map((r) => (
                     <tr key={r.rooms}>
                       <td className="px-6 py-3 font-medium">{r.rooms} phòng</td>
-                      <td className="px-6 py-3 text-right">{formatVND(ROOM_PRICE.standard * r.rooms)}</td>
-                      <td className="px-6 py-3 text-right">{formatVND(ROOM_PRICE.kitchen * r.rooms)}</td>
+                      <td className="px-6 py-3 text-right">{formatVND(r.price)}</td>
                     </tr>
                   ))}
                   <tr className="bg-mint/20">
-                    <td className="px-6 py-3 font-medium">Trên 5 phòng</td>
-                    <td className="px-6 py-3 text-right text-primary font-medium" colSpan={2}>
-                      Liên hệ báo giá
-                    </td>
+                    <td className="px-6 py-3 font-medium">Trên {ROOM_COUNT_CONTRACT_THRESHOLD} phòng</td>
+                    <td className="px-6 py-3 text-right text-primary font-medium">Liên hệ báo giá hợp đồng</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Phụ phí dọn gấp */}
-          <div className="rounded-3xl bg-card border border-border/60 shadow-card p-6">
-            <h2 className="font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-600" /> Phụ phí dọn gấp
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">Phụ phí tính theo đơn, không tính riêng từng phòng, hiển thị trước khi xác nhận.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {urgentRows.map((u) => (
-                <div key={u.label} className="rounded-xl border border-border/60 bg-muted/30 p-4">
-                  <p className="text-xs text-muted-foreground">{u.label}</p>
-                  <p className="mt-1 font-semibold text-primary">{formatVND(u.fee)}/đơn</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Bảng 3: Hình thức A */}
+          <SplitTable
+            title="Bảng 3: Hình thức A – Dọn dẹp nhà ở theo giờ"
+            firstColumn="Thời lượng"
+            rows={HOURLY_PRICING}
+            customerFallback="Theo khảo sát"
+          />
 
-          {/* Ví dụ */}
-          <div className="rounded-3xl bg-gradient-soft border border-border/60 p-6">
-            <h2 className="font-semibold">Ví dụ tính giá</h2>
-            <p className="text-xs text-muted-foreground mt-1">Tổng dự kiến = Đơn giá loại phòng × Số phòng + Phụ phí dọn gấp (nếu có).</p>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li className="flex justify-between border-b border-border/40 pb-2">
-                <span>2 phòng tiêu chuẩn, không gấp</span>
-                <span className="font-semibold">{formatVND(240000)}</span>
-              </li>
-              <li className="flex justify-between border-b border-border/40 pb-2">
-                <span>3 phòng tiêu chuẩn, dọn gấp</span>
-                <span className="font-semibold">{formatVND(395000)}</span>
-              </li>
-              <li className="flex justify-between border-b border-border/40 pb-2">
-                <span>5 phòng tiêu chuẩn, dọn gấp</span>
-                <span className="font-semibold">{formatVND(650000)}</span>
-              </li>
-              <li className="flex justify-between">
-                <span>2 phòng có bếp, không gấp</span>
-                <span className="font-semibold">{formatVND(300000)}</span>
-              </li>
-            </ul>
+          {/* Hình thức B */}
+          <SplitTable
+            title="Hình thức B: Dọn căn hộ theo diện tích"
+            firstColumn="Loại nhà / diện tích"
+            rows={AREA_PRICING}
+            customerFallback="Theo khảo sát"
+          />
+
+          {/* Bảng giá phụ thu đề xuất */}
+          <div className="rounded-3xl bg-card border border-border/60 shadow-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-border/60">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-amber-600" /> Bảng giá phụ thu đề xuất
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Phụ thu tính theo đơn, hiển thị trước khi xác nhận.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-6 py-3 font-medium">Trường hợp</th>
+                    <th className="text-right px-6 py-3 font-medium">Phụ thu</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {SURCHARGES.map((s) => (
+                    <tr key={s.label}>
+                      <td className="px-6 py-3 font-medium">{s.label}</td>
+                      <td className="px-6 py-3 text-right text-primary font-medium">{s.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -176,16 +251,15 @@ function PricingPage() {
               <Label>Loại phòng</Label>
               <RadioGroup
                 value={roomType}
-                onValueChange={(v) => setRoomType(v as "standard" | "kitchen")}
+                onValueChange={(v) => setRoomType(v as RoomTypeKey)}
                 className="mt-1.5 grid gap-2"
               >
-                {[
-                  { v: "standard", l: "Tiêu chuẩn (120.000đ)" },
-                  { v: "kitchen", l: "Phòng lớn / có bếp (150.000đ)" },
-                ].map((o) => (
-                  <label key={o.v} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30">
-                    <RadioGroupItem value={o.v} />
-                    <span className="text-xs font-medium">{o.l}</span>
+                {ROOM_PRICE_ORDER.map((k) => (
+                  <label key={k} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30">
+                    <RadioGroupItem value={k} />
+                    <span className="text-xs font-medium">
+                      {ROOM_PRICING[k].label} ({money(ROOM_PRICING[k].customer, "Báo giá riêng")})
+                    </span>
                   </label>
                 ))}
               </RadioGroup>
@@ -220,7 +294,7 @@ function PricingPage() {
               >
                 {[
                   { v: "normal", l: "Bình thường" },
-                  { v: "urgent", l: `Gấp (+${formatVND(urgentFee(rooms))})` },
+                  { v: "urgent", l: `Gấp – bắt đầu trong 2 giờ (+${formatVND(URGENT_FEE)}/đơn)` },
                 ].map((o) => (
                   <label key={o.v} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30">
                     <RadioGroupItem value={o.v} />
@@ -241,23 +315,34 @@ function PricingPage() {
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Khu vực</span><span className="text-foreground">{labelFrom(areas, area)}</span>
             </div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Loại phòng</span><span>{roomType === "kitchen" ? "Phòng lớn / có bếp" : "Tiêu chuẩn"}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Loại phòng</span><span className="text-right">{roomTypeLabel(roomType)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Số phòng</span><span>{rooms} phòng</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Khung giờ</span><span>{labelFrom(timeSlots, timeSlot)}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Mức độ</span><span>{urgency === "urgent" ? "Gấp" : "Bình thường"}</span></div>
-            <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">Đơn giá/phòng</span><span>{formatVND(price.perRoom)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(price.subtotal)}</span></div>
-            {urgency === "urgent" && (
-              <div className="flex justify-between text-amber-700"><span className="flex items-center gap-1"><Zap className="h-3 w-3" />Phụ phí dọn gấp</span><span>{formatVND(price.urgentFee)}</span></div>
+            {price.quote ? (
+              <div className="flex justify-between border-t border-border/40 pt-2">
+                <span className="font-medium">Tổng dự kiến</span>
+                <span className="font-bold text-primary">Báo giá riêng</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">Đơn giá/phòng</span><span>{formatVND(price.perRoom)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(price.subtotal)}</span></div>
+                {urgency === "urgent" && (
+                  <div className="flex justify-between text-amber-700"><span className="flex items-center gap-1"><Zap className="h-3 w-3" />Phụ thu đặt gấp</span><span>{formatVND(price.urgentFee)}</span></div>
+                )}
+                <div className="flex justify-between items-baseline pt-2 border-t border-border/40">
+                  <span className="font-medium">Tổng dự kiến</span>
+                  <span className="text-2xl font-bold text-primary">{formatVND(price.total)}</span>
+                </div>
+              </>
             )}
-            <div className="flex justify-between items-baseline pt-2 border-t border-border/40">
-              <span className="font-medium">Tổng dự kiến</span>
-              <span className="text-2xl font-bold text-primary">{formatVND(price.total)}</span>
-            </div>
-            {overLimit && (
+            {price.quote && (
               <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 flex items-start gap-2">
                 <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                Trên 5 phòng vui lòng liên hệ để nhận báo giá chính xác.
+                {roomType === "special"
+                  ? "Phòng đặc biệt trên 60m² được báo giá riêng, vui lòng liên hệ CleanLink."
+                  : `Trên ${ROOM_COUNT_CONTRACT_THRESHOLD} phòng vui lòng liên hệ để nhận báo giá hợp đồng.`}
               </div>
             )}
           </div>

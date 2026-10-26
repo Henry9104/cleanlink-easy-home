@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import type { BookingRow } from "@/lib/bookings";
+import { updateBooking, type BookingRow } from "@/lib/bookings";
+import { toast } from "sonner";
 import {
   statusLabel,
   statusColor,
@@ -47,6 +48,21 @@ function AdminPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [roles, setRoles] = useState<RoleRow[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  /** Xác nhận đã nhận chuyển khoản: chuyển đơn từ "chờ xác nhận" sang "đang tìm người dọn" */
+  async function confirmPayment(id: string) {
+    setConfirmingId(id);
+    try {
+      await updateBooking(id, { status: "searching" });
+      setBookings((list) => list.map((b) => (b.id === id ? { ...b, status: "searching" } : b)));
+      toast.success("Đã xác nhận chuyển khoản – đơn chuyển sang tìm người dọn");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không xác nhận được đơn, vui lòng thử lại");
+    } finally {
+      setConfirmingId(null);
+    }
+  }
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -150,7 +166,14 @@ function AdminPage() {
                       <TableCell><Badge variant="outline" className={statusColor[b.status as BookingStatus]}>{statusLabel[b.status as BookingStatus] ?? b.status}</Badge></TableCell>
                       <TableCell className="text-sm">{b.cleaner_name ?? <span className="text-muted-foreground italic">chưa gán</span>}</TableCell>
                       <TableCell className="text-right font-semibold text-primary">{formatVND(b.price)}</TableCell>
-                      <TableCell><Button asChild size="sm" variant="ghost"><Link to="/don/$id" params={{ id: b.id }}>Xem</Link></Button></TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {b.status === "pending" && (
+                          <Button size="sm" className="mr-1" disabled={confirmingId === b.id} onClick={() => void confirmPayment(b.id)}>
+                            {confirmingId === b.id ? "Đang xác nhận…" : "Xác nhận CK"}
+                          </Button>
+                        )}
+                        <Button asChild size="sm" variant="ghost"><Link to="/don/$id" params={{ id: b.id }}>Xem</Link></Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

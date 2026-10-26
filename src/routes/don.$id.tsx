@@ -25,6 +25,7 @@ import {
   timeSlots,
   statusLabel,
   statusColor,
+  roomTypeLabel,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
 import {
@@ -206,7 +207,7 @@ function BookingDetailPage() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <Info icon={<Clock className="h-3 w-3" />} label="Ngày & khung giờ" value={`${booking.service_date} · ${labelFrom(timeSlots, booking.time_slot)}`} />
-            <Info icon={<CheckCircle2 className="h-3 w-3" />} label="Số phòng" value={`${booking.rooms} phòng · ${booking.room_type === "kitchen" ? "phòng lớn / có bếp" : "tiêu chuẩn"}`} />
+            <Info icon={<CheckCircle2 className="h-3 w-3" />} label="Số phòng" value={`${booking.rooms} phòng · ${roomTypeLabel(booking.room_type).toLowerCase()}`} />
             <Info icon={<Wallet className="h-3 w-3" />} label="Tổng đơn" value={formatVND(booking.price)} />
           </div>
           {booking.note && (

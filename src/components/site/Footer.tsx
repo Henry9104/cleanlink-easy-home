@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Phone, Mail, MapPin } from "lucide-react";
-import logoAsset from "@/assets/cleanlink-logo.jpg.asset.json";
+import { Phone, Mail, MapPin, MessageCircle, Facebook } from "lucide-react";
+import { BrandLogo } from "@/components/site/BrandLogo";
+import { CONTACT } from "@/lib/contact-info";
 
 export function Footer() {
   return (
@@ -8,11 +9,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 md:px-6 py-14 grid gap-10 md:grid-cols-4">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <img
-              src={logoAsset.url}
-              alt="CleanLink"
-              className="h-10 w-auto rounded-lg object-cover"
-            />
+            <BrandLogo className="h-14 w-14 object-contain" />
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
             CleanLink là nền tảng kết nối chủ cơ sở lưu trú với người dọn tại Quy Nhơn.
@@ -44,16 +41,27 @@ export function Footer() {
         <div>
           <h4 className="font-semibold mb-3 text-sm">Liên hệ</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4" /> 0905 123 456</li>
+            <li className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <a href={CONTACT.hotlineHref} className="hover:text-primary">{CONTACT.hotline}</a>
+            </li>
+            <li className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              <a href={CONTACT.zaloUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary">Zalo: {CONTACT.zaloDisplay}</a>
+            </li>
             <li className="flex items-center gap-2"><Mail className="h-4 w-4" /> cleanlink.quynhon@gmail.com</li>
-            <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Khu vực hoạt động: Quy Nhơn</li>
+            <li className="flex items-center gap-2">
+              <Facebook className="h-4 w-4" />
+              <a href={CONTACT.fanpageUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary">Fanpage CleanLink</a>
+            </li>
+            <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5" /> Khu vực hoạt động: {CONTACT.area}</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-border/60">
         <div className="mx-auto max-w-7xl px-4 md:px-6 py-5 text-xs text-muted-foreground flex flex-col md:flex-row items-center justify-between gap-2">
           <p>© {new Date().getFullYear()} CleanLink. Nền tảng kết nối chủ cơ sở lưu trú với người dọn.</p>
-          <p>Khu vực hoạt động: Quy Nhơn</p>
+          <p>Khu vực hoạt động: {CONTACT.area}</p>
         </div>
       </div>
     </footer>

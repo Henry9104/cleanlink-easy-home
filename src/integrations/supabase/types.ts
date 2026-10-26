@@ -29,6 +29,7 @@ export type Database = {
           host_id: string
           id: string
           note: string | null
+          payment_method: string
           phone: string
           photo_after: string | null
           photo_before: string | null
@@ -58,6 +59,7 @@ export type Database = {
           host_id: string
           id?: string
           note?: string | null
+          payment_method?: string
           phone: string
           photo_after?: string | null
           photo_before?: string | null
@@ -87,6 +89,7 @@ export type Database = {
           host_id?: string
           id?: string
           note?: string | null
+          payment_method?: string
           phone?: string
           photo_after?: string | null
           photo_before?: string | null

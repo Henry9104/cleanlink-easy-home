@@ -22,19 +22,19 @@ export const services: Service[] = [
     slug: "co-ban",
     name: "Dọn phòng tiêu chuẩn sau khi khách trả phòng",
     description:
-      "Vệ sinh phòng chuẩn giữa hai lượt khách: thay ga, dọn rác, lau bề mặt, chỉnh ga giường – áp dụng cho phòng 15–25 m², không có bếp riêng.",
+      "Vệ sinh phòng chuẩn giữa hai lượt khách: dọn phòng thông thường, thay ga có sẵn, thu gom rác, lau sàn và vệ sinh nhà tắm – áp dụng cho phòng tiêu chuẩn dưới 25 m².",
     duration: "45 – 60 phút/phòng",
-    price: "120.000đ/phòng",
+    price: "60.000đ/phòng",
     icon: LogOut,
     tag: "Phổ biến nhất",
   },
   {
     slug: "phong-lon",
-    name: "Dọn phòng lớn hoặc phòng có bếp",
+    name: "Dọn phòng lớn, phòng gia đình hoặc phòng có bếp",
     description:
-      "Áp dụng cho phòng trên 25 m² hoặc có khu vực bếp riêng – khối lượng công việc lớn hơn, thời gian dọn dài hơn.",
+      "Áp dụng cho phòng từ 25 m² trở lên hoặc có bếp nhỏ – khối lượng công việc lớn hơn, thời gian dọn dài hơn. Phòng trên 60 m² được báo giá riêng.",
     duration: "60 – 90 phút/phòng",
-    price: "150.000đ/phòng",
+    price: "80.000đ – 120.000đ/phòng",
     icon: Building2,
   },
   {
@@ -43,7 +43,7 @@ export const services: Service[] = [
     description:
       "Điều phối nhiều người dọn xử lý cùng lúc 3–5 phòng, hoàn tất trước khung giờ khách mới nhận phòng, có người điều phối theo dõi tiến độ.",
     duration: "1 – 3 giờ",
-    price: "Từ 120.000đ/phòng",
+    price: "Từ 60.000đ/phòng",
     icon: Building2,
   },
   {
@@ -83,10 +83,19 @@ export const propertyTypes = [
   { value: "apartment", label: "Căn hộ thuê ngắn hạn" },
 ] as const;
 
-export const roomTypes = [
-  { value: "standard", label: "Phòng tiêu chuẩn (15–25 m², không có bếp)" },
-  { value: "kitchen", label: "Phòng lớn hoặc có bếp (trên 25 m²)" },
-] as const;
+export type RoomTypeKey = "standard" | "large" | "family" | "kitchen" | "special";
+
+export const roomTypes: readonly { value: RoomTypeKey; label: string }[] = [
+  { value: "standard", label: "Phòng tiêu chuẩn (dưới 25 m²)" },
+  { value: "large", label: "Phòng lớn (25–40 m²)" },
+  { value: "family", label: "Phòng gia đình (40–60 m²)" },
+  { value: "kitchen", label: "Phòng có bếp nhỏ" },
+  { value: "special", label: "Phòng đặc biệt (trên 60 m²)" },
+];
+
+export function roomTypeLabel(value: string) {
+  return roomTypes.find((r) => r.value === value)?.label ?? "Phòng tiêu chuẩn";
+}
 
 export const areas = [
   { value: "trung_tam", label: "Trung tâm Quy Nhơn" },
@@ -113,6 +122,7 @@ export const addonOptions = [
 ] as const;
 
 export type BookingStatus =
+  | "pending"
   | "created"
   | "searching"
   | "accepted"
@@ -133,7 +143,7 @@ export type Booking = {
   address: string;
   phone: string;
   rooms: number;
-  roomType: "standard" | "kitchen";
+  roomType: RoomTypeKey;
   timeSlot: string;
   urgency: "normal" | "urgent";
   addons: string[];
@@ -144,6 +154,7 @@ export type Booking = {
 };
 
 export const statusLabel: Record<BookingStatus, string> = {
+  pending: "Chờ xác nhận",
   created: "Đã tạo đơn",
   searching: "Đang tìm người dọn",
   accepted: "Người dọn đã nhận việc",
@@ -157,6 +168,7 @@ export const statusLabel: Record<BookingStatus, string> = {
 };
 
 export const statusColor: Record<BookingStatus, string> = {
+  pending: "bg-orange-100 text-orange-800 border-orange-200",
   created: "bg-slate-100 text-slate-800 border-slate-200",
   searching: "bg-amber-100 text-amber-800 border-amber-200",
   accepted: "bg-sky-100 text-sky-800 border-sky-200",
@@ -170,32 +182,98 @@ export const statusColor: Record<BookingStatus, string> = {
 };
 
 // ===== Pricing =====
-// - Đơn giá / phòng: tiêu chuẩn 120.000đ, phòng lớn / có bếp 150.000đ
-// - Phụ phí dọn gấp tính theo đơn: 1–2 phòng: 20.000đ, 3–4 phòng: 35.000đ, ≥5 phòng: 50.000đ
-// - Không áp dụng giảm giá theo số phòng ở giai đoạn hiện tại
-export const ROOM_PRICE = {
-  standard: 120000,
-  kitchen: 150000,
-} as const;
+// Mỗi mức giá gồm: Khách trả = Người dọn nhận + CleanLink thu (phí nền tảng).
+// `null` nghĩa là báo giá riêng / theo thỏa thuận.
+export type PriceSplit = {
+  customer: number | null;
+  cleaner: number | null;
+  platform: number | null;
+};
 
-export function urgentFee(rooms: number) {
-  if (rooms <= 0) return 0;
-  if (rooms <= 2) return 20000;
-  if (rooms <= 4) return 35000;
-  return 50000;
+// Bảng 1: Giá dọn phòng lưu trú
+export const ROOM_PRICING: Record<RoomTypeKey, PriceSplit & { label: string }> = {
+  standard: { label: "Phòng tiêu chuẩn dưới 25m²", customer: 60000, cleaner: 50000, platform: 10000 },
+  large: { label: "Phòng lớn 25–40m²", customer: 80000, cleaner: 65000, platform: 15000 },
+  family: { label: "Phòng gia đình 40–60m²", customer: 110000, cleaner: 90000, platform: 20000 },
+  kitchen: { label: "Phòng có bếp nhỏ", customer: 120000, cleaner: 100000, platform: 20000 },
+  special: { label: "Phòng đặc biệt trên 60m²", customer: null, cleaner: null, platform: null },
+};
+
+export const ROOM_PRICE_ORDER: RoomTypeKey[] = ["standard", "large", "family", "kitchen", "special"];
+
+// Giá khách trả / phòng (0 = báo giá riêng)
+export const ROOM_PRICE: Record<RoomTypeKey, number> = {
+  standard: 60000,
+  large: 80000,
+  family: 110000,
+  kitchen: 120000,
+  special: 0,
+};
+
+// Ví dụ minh họa cho Bảng 1
+export const ROOM_EXAMPLE = {
+  customerTotal: 300000,
+  cleanerTotal: 250000,
+  platformTotal: 50000,
+  note: "Mức phí 10.000đ/phòng chỉ phù hợp nếu CleanLink kiểm soát tốt chi phí vận hành và có nhiều phòng được dọn trong cùng một địa điểm.",
+};
+
+// Bảng 2: Giá theo số lượng phòng (phòng tiêu chuẩn)
+export const ROOM_COUNT_PRICING: { rooms: number; price: number }[] = [1, 2, 3, 4, 5, 6, 7, 8].map(
+  (rooms) => ({ rooms, price: rooms * ROOM_PRICE.standard }),
+);
+export const ROOM_COUNT_CONTRACT_THRESHOLD = 10;
+
+// Bảng 3: Hình thức A – Dọn dẹp nhà ở theo giờ
+export const HOURLY_PRICING: (PriceSplit & { label: string })[] = [
+  { label: "2 giờ", customer: 140000, cleaner: 120000, platform: 20000 },
+  { label: "3 giờ", customer: 210000, cleaner: 180000, platform: 30000 },
+  { label: "4 giờ", customer: 280000, cleaner: 240000, platform: 40000 },
+  { label: "5 giờ", customer: 350000, cleaner: 300000, platform: 50000 },
+  { label: "6 giờ", customer: 420000, cleaner: 360000, platform: 60000 },
+];
+
+// Hình thức B – Dọn căn hộ theo diện tích
+export const AREA_PRICING: (PriceSplit & { label: string })[] = [
+  { label: "Studio (dưới 40m²)", customer: 140000, cleaner: 120000, platform: 20000 },
+  { label: "Căn hộ 1 phòng ngủ (40–60m²)", customer: 180000, cleaner: 155000, platform: 25000 },
+  { label: "Căn hộ 2 phòng ngủ (60–80m²)", customer: 240000, cleaner: 205000, platform: 35000 },
+  { label: "Căn hộ 3 phòng ngủ (80–110m²)", customer: 320000, cleaner: 275000, platform: 45000 },
+  { label: "Nhà phố nhỏ (80–120m²)", customer: 350000, cleaner: 300000, platform: 50000 },
+  { label: "Nhà lớn trên 120m²", customer: null, cleaner: null, platform: null },
+];
+
+// Bảng giá phụ thu đề xuất
+export const URGENT_FEE = 20000;
+export const SURCHARGES: { label: string; value: string }[] = [
+  { label: "Đặt lịch thông thường", value: "Miễn phí" },
+  { label: "Đặt gấp, cần bắt đầu trong 2 giờ", value: "+20.000đ/đơn" },
+  { label: "Dọn sau 20 giờ", value: "+20.000đ/đơn" },
+  { label: "Dọn phòng bẩn nhiều", value: "Báo giá thêm trước khi thực hiện" },
+  { label: "Vệ sinh tủ lạnh bên trong", value: "+30.000đ" },
+  { label: "Vệ sinh lò vi sóng bên trong", value: "+20.000đ" },
+  { label: "Vệ sinh kính khó tiếp cận", value: "Báo giá riêng" },
+  { label: "Ngoài khu vực phục vụ tiêu chuẩn", value: "Phụ thu di chuyển được báo trước" },
+];
+
+// Phụ thu đặt gấp tính theo đơn (không tính riêng từng phòng)
+export function urgentFee() {
+  return URGENT_FEE;
 }
 
 export function estimatePrice(
   rooms: number,
   urgency: "normal" | "urgent",
-  roomType: "standard" | "kitchen" = "standard",
+  roomType: RoomTypeKey = "standard",
 ) {
   const r = Math.max(1, rooms);
   const perRoom = ROOM_PRICE[roomType];
+  // Phòng đặc biệt (trên 60m²) hoặc hợp đồng trên 10 phòng: báo giá riêng
+  const quote = roomType === "special" || r > ROOM_COUNT_CONTRACT_THRESHOLD;
   const subtotal = perRoom * r;
-  const fee = urgency === "urgent" ? urgentFee(r) : 0;
+  const fee = urgency === "urgent" ? URGENT_FEE : 0;
   const total = subtotal + fee;
-  return { perRoom, subtotal, urgentFee: fee, total };
+  return { perRoom, subtotal, urgentFee: fee, total, quote };
 }
 
 export function formatVND(v: number) {
@@ -217,7 +295,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "13-14",
     urgency: "urgent",
     addons: ["toilet", "rac", "ga"],
-    price: 650000,
+    price: 320000,
     cleaner: "Nguyễn Thị Lan",
     status: "on_the_way",
   },
@@ -234,7 +312,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "12-13",
     urgency: "normal",
     addons: ["toilet", "rac", "ga", "san"],
-    price: 480000,
+    price: 240000,
     cleaner: "Trần Văn Sơn + 1",
     status: "in_progress",
   },
@@ -251,7 +329,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "11-12",
     urgency: "normal",
     addons: ["ga", "khan"],
-    price: 300000,
+    price: 240000,
     cleaner: "Lê Thị Lan",
     status: "completed",
   },
@@ -268,7 +346,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "13-14",
     urgency: "normal",
     addons: ["toilet", "ga"],
-    price: 360000,
+    price: 180000,
     status: "searching",
   },
   {
@@ -284,7 +362,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "12-13",
     urgency: "urgent",
     addons: ["toilet", "rac", "ga", "san", "khan"],
-    price: 515000,
+    price: 260000,
     cleaner: "Phạm Thị Mai + 1",
     status: "accepted",
   },
@@ -301,7 +379,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "11-12",
     urgency: "normal",
     addons: ["ga"],
-    price: 120000,
+    price: 60000,
     cleaner: "Đoàn Thị Thu",
     status: "reviewed",
   },
@@ -314,7 +392,7 @@ export type Job = {
   address: string;
   area: string;
   rooms: number;
-  roomType: "standard" | "kitchen";
+  roomType: RoomTypeKey;
   timeSlot: string;
   distanceKm: number;
   earnMin: number;
@@ -333,8 +411,8 @@ export const sampleJobs: Job[] = [
     roomType: "standard",
     timeSlot: "13-14",
     distanceKm: 2.1,
-    earnMin: 600000,
-    earnMax: 650000,
+    earnMin: 250000,
+    earnMax: 250000,
     urgency: "urgent",
     requirements: [
       "Dọn 5 phòng tiêu chuẩn sau khi khách trả phòng",
@@ -351,8 +429,8 @@ export const sampleJobs: Job[] = [
     roomType: "standard",
     timeSlot: "12-13",
     distanceKm: 12.4,
-    earnMin: 480000,
-    earnMax: 480000,
+    earnMin: 200000,
+    earnMax: 200000,
     urgency: "normal",
     requirements: [
       "Dọn 4 phòng tiêu chuẩn",
@@ -369,8 +447,8 @@ export const sampleJobs: Job[] = [
     roomType: "kitchen",
     timeSlot: "11-12",
     distanceKm: 5.8,
-    earnMin: 300000,
-    earnMax: 300000,
+    earnMin: 200000,
+    earnMax: 200000,
     urgency: "normal",
     requirements: [
       "Dọn 2 phòng có bếp riêng",

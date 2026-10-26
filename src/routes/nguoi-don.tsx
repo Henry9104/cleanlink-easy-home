@@ -13,6 +13,7 @@ import {
   formatVND,
   statusLabel,
   statusColor,
+  roomTypeLabel,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
 
@@ -137,7 +138,7 @@ function CleanerPage() {
                       <MapPin className="h-3.5 w-3.5" /> {b.address} · {labelFrom(areas, b.area)}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                      <Home className="h-3 w-3" /> {b.room_type === "kitchen" ? "Phòng lớn / có bếp" : "Phòng tiêu chuẩn"}
+                      <Home className="h-3 w-3" /> {roomTypeLabel(b.room_type)}
                     </p>
                   </div>
                   <span className="rounded-full bg-mint/40 text-mint-foreground text-xs px-3 py-1 font-medium font-mono">{b.code}</span>
