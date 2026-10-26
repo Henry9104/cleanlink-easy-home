@@ -21,13 +21,18 @@ import {
   addonOptions,
   estimatePrice,
   formatVND,
+  roomTypeLabel,
+  ROOM_PRICING,
+  ROOM_COUNT_CONTRACT_THRESHOLD,
+  URGENT_FEE,
+  type RoomTypeKey,
 } from "@/lib/cleanlink-data";
+import { CONTACT } from "@/lib/contact-info";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowRight, Info } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { newBookingCode } from "@/lib/bookings";
+import { newBookingCode, saveBookingDraft } from "@/lib/bookings";
 
 export const Route = createFileRoute("/dat-lich")({
   head: () => ({
@@ -47,10 +52,9 @@ function todayISO() {
 function BookingPage() {
   const navigate = useNavigate();
   const { user, profile, isAuthenticated, loading: authLoading } = useAuth();
-  const [saving, setSaving] = useState(false);
 
   const [propertyType, setPropertyType] = useState("homestay");
-  const [roomType, setRoomType] = useState<"standard" | "kitchen">("standard");
+  const [roomType, setRoomType] = useState<RoomTypeKey>("standard");
   const [area, setArea] = useState("trung_tam");
   const [timeSlot, setTimeSlot] = useState("13-14");
   const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
@@ -63,7 +67,7 @@ function BookingPage() {
     setAddons((a) => (a.includes(v) ? a.filter((x) => x !== v) : [...a, v]));
   }
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const propertyName = String(fd.get("propertyName") || "").trim();
@@ -82,38 +86,23 @@ function BookingPage() {
       return;
     }
 
-    setSaving(true);
-    try {
-      const { data, error } = await supabase
-        .from("bookings")
-        .insert({
-          code: newBookingCode(),
-          host_id: user.id,
-          property_name: propertyName || profile?.property_name || "",
-          property_type: propertyType,
-          area,
-          address,
-          phone,
-          rooms,
-          room_type: roomType,
-          service_date: date,
-          time_slot: timeSlot,
-          urgency,
-          addons,
-          note: note || null,
-          price: price.total,
-          status: "searching",
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      toast.success("Đã tạo đơn – đang tìm người dọn phù hợp");
-      void navigate({ to: "/don/$id", params: { id: data.id } });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không tạo được đơn, vui lòng thử lại");
-    } finally {
-      setSaving(false);
-    }
+    saveBookingDraft({
+      code: newBookingCode(),
+      property_name: propertyName || profile?.property_name || "",
+      property_type: propertyType,
+      area,
+      address,
+      phone,
+      rooms,
+      room_type: roomType,
+      service_date: date,
+      time_slot: timeSlot,
+      urgency,
+      addons,
+      note: note || null,
+      price: price.total,
+    });
+    void navigate({ to: "/thanh-toan" });
   }
 
 
@@ -175,7 +164,7 @@ function BookingPage() {
             <Label>Loại phòng *</Label>
             <RadioGroup
               value={roomType}
-              onValueChange={(v) => setRoomType(v as "standard" | "kitchen")}
+              onValueChange={(v) => setRoomType(v as RoomTypeKey)}
               className="mt-2 grid gap-2 md:grid-cols-2"
             >
               {roomTypes.map((r) => (
@@ -187,7 +176,7 @@ function BookingPage() {
                   <div>
                     <span className="text-sm font-medium block">{r.label}</span>
                     <span className="text-xs text-muted-foreground">
-                      {r.value === "standard" ? "120.000đ/phòng" : "150.000đ/phòng"}
+                      {ROOM_PRICING[r.value].customer === null ? "Báo giá riêng" : `${formatVND(ROOM_PRICING[r.value].customer ?? 0)}/phòng`}
                     </span>
                   </div>
                 </label>
@@ -241,7 +230,7 @@ function BookingPage() {
             >
               {[
                 { v: "normal", l: "Bình thường", d: "Đặt trước, không phụ phí" },
-                { v: "urgent", l: "Gấp", d: "Có phụ phí dọn gấp theo số phòng" },
+                { v: "urgent", l: "Gấp", d: `Cần bắt đầu trong 2 giờ, phụ thu +${formatVND(URGENT_FEE)}/đơn` },
               ].map((o) => (
                 <label
                   key={o.v}
@@ -280,8 +269,11 @@ function BookingPage() {
             <Textarea id="note" name="note" rows={3} placeholder="Mã cửa, chỗ để chìa khoá, khu vực cần chú ý…" className="mt-1.5" />
           </div>
 
-          <Button type="submit" size="lg" className="w-full rounded-full" disabled={saving}>
-            {saving ? "Đang tạo đơn…" : `Xác nhận đặt lịch · ${formatVND(price.total)}`} <ArrowRight className="ml-1 h-4 w-4" />
+          <Button type="submit" size="lg" className="w-full rounded-full" disabled={price.quote}>
+            {price.quote
+              ? "Liên hệ để nhận báo giá"
+              : `Tiếp tục thanh toán · ${formatVND(price.total)}`}{" "}
+            <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
         </form>
 
@@ -290,7 +282,7 @@ function BookingPage() {
           <div className="text-sm space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Loại phòng</span>
-              <span className="font-medium">{roomType === "kitchen" ? "Phòng lớn / có bếp" : "Tiêu chuẩn"}</span>
+              <span className="font-medium">{roomTypeLabel(roomType)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Số phòng</span>
@@ -298,11 +290,11 @@ function BookingPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Đơn giá / phòng</span>
-              <span className="font-medium">{formatVND(price.perRoom)}</span>
+              <span className="font-medium">{price.perRoom ? formatVND(price.perRoom) : "Báo giá riêng"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tạm tính</span>
-              <span className="font-medium">{formatVND(price.subtotal)}</span>
+              <span className="font-medium">{price.quote ? "—" : formatVND(price.subtotal)}</span>
             </div>
             {urgency === "urgent" && (
               <div className="flex justify-between text-amber-700">
@@ -313,11 +305,14 @@ function BookingPage() {
           </div>
           <div className="border-t border-border/60 pt-3 flex justify-between items-baseline">
             <span className="text-sm text-muted-foreground">Tổng dự kiến</span>
-            <span className="text-2xl font-bold text-primary">{formatVND(price.total)}</span>
+            <span className="text-2xl font-bold text-primary">{price.quote ? "Báo giá riêng" : formatVND(price.total)}</span>
           </div>
-          {rooms > 5 && (
+          {price.quote && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3">
-              Trên 5 phòng vui lòng liên hệ để nhận báo giá chính xác.
+              {roomType === "special"
+                ? "Phòng đặc biệt trên 60m² được báo giá riêng."
+                : `Trên ${ROOM_COUNT_CONTRACT_THRESHOLD} phòng liên hệ báo giá hợp đồng.`}{" "}
+              Vui lòng gọi hotline {CONTACT.hotline} hoặc nhắn Zalo để được hỗ trợ.
             </div>
           )}
           <div className="flex items-start gap-2 text-xs text-muted-foreground bg-mint/30 rounded-lg p-3">

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { isValidPhone, normalizePhone, phoneToEmail, type AppRole } from "@/lib/auth";
 
@@ -124,6 +125,9 @@ function AuthPage() {
     <SiteLayout>
       <section className="mx-auto max-w-2xl px-4 py-10 md:px-6 md:py-16">
         <div className="mb-6 text-center">
+          <Link to="/" className="mb-4 inline-flex" aria-label="CleanLink - Trang chủ">
+            <BrandLogo className="h-16 w-16 object-contain" />
+          </Link>
           <h1 className="text-2xl font-bold md:text-3xl">Đăng nhập & Đăng ký</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Dùng số điện thoại để đăng nhập CleanLink. Chủ cơ sở lưu trú đặt người dọn, người dọn nhận

@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Phone, Mail, MapPin, MessageCircle, Facebook } from "lucide-react";
 import { toast } from "sonner";
+import { CONTACT } from "@/lib/contact-info";
 
 export const Route = createFileRoute("/lien-he")({
   head: () => ({
     meta: [
       { title: "Liên hệ CleanLink Quy Nhơn" },
-      { name: "description", content: "Hotline, email, Zalo và văn phòng của CleanLink tại Quy Nhơn, Bình Định." },
+      { name: "description", content: "Hotline, email, Zalo và fanpage của CleanLink tại Quy Nhơn, Gia Lai." },
     ],
   }),
   component: ContactPage,
@@ -36,11 +37,11 @@ function ContactPage() {
       <section className="mx-auto max-w-6xl px-4 md:px-6 py-16 grid gap-10 lg:grid-cols-2">
         <div className="space-y-4">
           {[
-            { icon: Phone, label: "Hotline", value: "0905 123 456" },
-            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com" },
-            { icon: MapPin, label: "Văn phòng", value: "Trung tâm Quy Nhơn, Bình Định" },
-            { icon: MessageCircle, label: "Zalo OA", value: "zalo.me/cleanlink" },
-            { icon: Facebook, label: "Fanpage", value: "facebook.com/cleanlink.vn" },
+            { icon: Phone, label: "Hotline", value: CONTACT.hotline, href: CONTACT.hotlineHref },
+            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com", href: "mailto:cleanlink.quynhon@gmail.com" },
+            { icon: MapPin, label: "Khu vực hoạt động", value: CONTACT.area, href: undefined },
+            { icon: MessageCircle, label: "Zalo", value: CONTACT.zaloDisplay, href: CONTACT.zaloUrl },
+            { icon: Facebook, label: "Fanpage", value: CONTACT.fanpageDisplay, href: CONTACT.fanpageUrl },
           ].map((c) => (
             <div key={c.label} className="flex items-start gap-4 rounded-2xl bg-card p-5 border border-border/60 shadow-card">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-mint/50 text-mint-foreground shrink-0">
@@ -48,7 +49,17 @@ function ContactPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{c.label}</p>
-                <p className="font-semibold">{c.value}</p>
+                {c.href ? (
+                  <a
+                    href={c.href}
+                    {...(c.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="font-semibold hover:text-primary"
+                  >
+                    {c.value}
+                  </a>
+                ) : (
+                  <p className="font-semibold">{c.value}</p>
+                )}
               </div>
             </div>
           ))}

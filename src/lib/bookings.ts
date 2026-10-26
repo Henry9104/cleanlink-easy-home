@@ -7,6 +7,7 @@ export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 
 /** Các bước trạng thái hiển thị cho chủ cơ sở và người dọn */
 export const flowSteps: { key: BookingStatus; label: string }[] = [
+  { key: "pending", label: "Chờ xác nhận chuyển khoản" },
   { key: "searching", label: "Đang tìm người dọn" },
   { key: "accepted", label: "Người dọn đã nhận việc" },
   { key: "in_progress", label: "Đang thực hiện" },
@@ -22,6 +23,38 @@ export function stepIndex(status: string) {
 
 export function newBookingCode() {
   return `CL${Date.now().toString().slice(-6)}`;
+}
+
+/** Phương thức thanh toán duy nhất: chuyển khoản VietQR */
+export const PAYMENT_METHOD = "bank_transfer" as const;
+
+/** Đơn đã nhập ở bước đặt lịch, chưa ghi vào database – chỉ lưu vào database khi khách bấm "Tôi đã chuyển khoản" */
+export type BookingDraft = Omit<BookingInsert, "host_id" | "status" | "payment_method"> & {
+  price: number;
+};
+
+const DRAFT_KEY = "cleanlink:booking-draft";
+
+export function saveBookingDraft(draft: BookingDraft) {
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+export function loadBookingDraft(): BookingDraft | null {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as BookingDraft) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearBookingDraft() {
+  sessionStorage.removeItem(DRAFT_KEY);
+}
+
+/** Cú pháp nội dung chuyển khoản: [SĐT khách] - [Mã đơn] */
+export function buildTransferContent(phone: string, code: string) {
+  return `${phone.replace(/\D/g, "")} - ${code}`;
 }
 
 export async function fetchBooking(id: string) {

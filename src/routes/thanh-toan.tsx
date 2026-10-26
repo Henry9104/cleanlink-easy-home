@@ -1,219 +1,212 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Copy, QrCode, Phone, Info } from "lucide-react";
+import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { formatVND } from "@/lib/cleanlink-data";
-import { useState } from "react";
-import { CheckCircle2, CreditCard, Wallet, Landmark, QrCode, Copy } from "lucide-react";
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  PAYMENT_METHOD,
+  buildTransferContent,
+  clearBookingDraft,
+  loadBookingDraft,
+  type BookingDraft,
+} from "@/lib/bookings";
+import { estimatePrice, formatVND, roomTypeLabel, type RoomTypeKey } from "@/lib/cleanlink-data";
+import { BANK_ACCOUNT, CONTACT, buildVietQrUrl } from "@/lib/contact-info";
 
 export const Route = createFileRoute("/thanh-toan")({
   head: () => ({
     meta: [
-      { title: "Thanh toán – CleanLink" },
-      { name: "description", content: "Thanh toán mock cho đơn dọn phòng homestay/mini hotel qua CleanLink." },
+      { title: "Thanh toán chuyển khoản – CleanLink" },
+      { name: "description", content: "Thanh toán đơn dọn phòng CleanLink bằng chuyển khoản VietQR qua Vietcombank." },
     ],
   }),
   component: PaymentPage,
 });
 
-const summary = { rooms: 5, subtotal: 400000, urgent: 80000, total: 480000 };
-const ORDER_ID = "CL240712";
+async function copyText(text: string, label: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`Đã sao chép ${label}`);
+  } catch {
+    toast.error("Không sao chép được, vui lòng chép thủ công");
+  }
+}
 
-type MethodKey = "momo" | "vnpay" | "transfer" | "cash";
-
-const qrConfig: Record<Exclude<MethodKey, "cash">, {
-  title: string;
-  brandColor: string;
-  brandLabel: string;
-  account: string;
-  accountLabel: string;
-  holder: string;
-  note: string;
-}> = {
-  momo: {
-    title: "Quét mã MoMo để thanh toán",
-    brandColor: "#a50064",
-    brandLabel: "MoMo",
-    account: "0905 123 456",
-    accountLabel: "Số điện thoại MoMo",
-    holder: "CÔNG TY CLEANLINK",
-    note: "Mở app MoMo → Quét mã → Xác nhận số tiền.",
-  },
-  vnpay: {
-    title: "Quét mã VNPay QR",
-    brandColor: "#005baa",
-    brandLabel: "VNPay",
-    account: "9704 0000 1234 5678",
-    accountLabel: "Số tài khoản VNPay",
-    holder: "CONG TY CLEANLINK",
-    note: "Mở app ngân hàng có hỗ trợ VNPay QR → Quét mã.",
-  },
-  transfer: {
-    title: "Chuyển khoản qua QR ngân hàng",
-    brandColor: "#0a7d3b",
-    brandLabel: "VietQR",
-    account: "0123 4567 8910 - Vietcombank",
-    accountLabel: "Số tài khoản",
-    holder: "CONG TY CLEANLINK",
-    note: "Mở app ngân hàng → Quét mã QR → Kiểm tra nội dung chuyển khoản.",
-  },
-};
-
-function VirtualQR({ method }: { method: Exclude<MethodKey, "cash"> }) {
-  const cfg = qrConfig[method];
-  const payload = encodeURIComponent(
-    `CLEANLINK|${method.toUpperCase()}|${ORDER_ID}|${summary.total}|${cfg.holder}`,
-  );
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=1&data=${payload}`;
-  const noteText = `CLEANLINK ${ORDER_ID}`;
-
+function CopyRow({ label, value, copyValue }: { label: string; value: string; copyValue?: string }) {
   return (
-    <div className="mt-4 rounded-xl border border-border/70 bg-mint/20 p-5">
-      <div className="flex items-center gap-2">
-        <QrCode className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold">{cfg.title}</p>
-      </div>
-
-      <div className="mt-4 flex flex-col items-center">
-        <div className="rounded-2xl bg-white p-3 shadow-card border border-border/60">
-          <div
-            className="flex items-center justify-center rounded-md px-3 py-1 mb-2 text-xs font-bold text-white"
-            style={{ backgroundColor: cfg.brandColor }}
-          >
-            {cfg.brandLabel}
-          </div>
-          <img
-            src={qrUrl}
-            alt={`Mã QR ${cfg.brandLabel} cho đơn ${ORDER_ID}`}
-            width={200}
-            height={200}
-            className="h-[200px] w-[200px]"
-          />
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">Mã QR demo · hết hạn sau 15 phút</p>
-      </div>
-
-      <dl className="mt-4 space-y-2 text-sm">
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">{cfg.accountLabel}</dt>
-          <dd className="font-medium text-right">{cfg.account}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Người nhận</dt>
-          <dd className="font-medium text-right">{cfg.holder}</dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-muted-foreground">Số tiền</dt>
-          <dd className="font-semibold text-primary">{formatVND(summary.total)}</dd>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="text-muted-foreground">Nội dung</dt>
-          <dd className="flex items-center gap-2">
-            <span className="font-mono text-xs bg-white border border-border rounded px-2 py-1">{noteText}</span>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard?.writeText(noteText);
-                toast.success("Đã sao chép nội dung chuyển khoản");
-              }}
-              className="text-primary hover:text-primary/80"
-              aria-label="Sao chép nội dung"
-            >
-              <Copy className="h-4 w-4" />
-            </button>
-          </dd>
-        </div>
-      </dl>
-
-      <p className="mt-4 text-xs text-muted-foreground">{cfg.note}</p>
+    <div className="flex items-center justify-between gap-3">
+      <dt className="text-muted-foreground shrink-0">{label}</dt>
+      <dd className="flex items-center gap-2 min-w-0">
+        <span className="font-medium text-right break-all">{value}</span>
+        <button
+          type="button"
+          onClick={() => void copyText(copyValue ?? value, label.toLowerCase())}
+          className="text-primary hover:text-primary/80 shrink-0"
+          aria-label={`Sao chép ${label.toLowerCase()}`}
+        >
+          <Copy className="h-4 w-4" />
+        </button>
+      </dd>
     </div>
   );
 }
 
 function PaymentPage() {
-  const [method, setMethod] = useState<MethodKey>("momo");
-  const [paid, setPaid] = useState(false);
+  const navigate = useNavigate();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  // undefined: đang đọc bản nháp · null: không có đơn cần thanh toán
+  const [draft, setDraft] = useState<BookingDraft | null | undefined>(undefined);
+  const [qrFailed, setQrFailed] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  if (paid) {
+  useEffect(() => {
+    setDraft(loadBookingDraft());
+  }, []);
+
+  if (draft === undefined) {
+    return (
+      <SiteLayout>
+        <div className="mx-auto max-w-3xl px-4 py-16 text-sm text-muted-foreground">Đang tải…</div>
+      </SiteLayout>
+    );
+  }
+
+  if (draft === null) {
     return (
       <SiteLayout>
         <section className="mx-auto max-w-md px-4 md:px-6 py-20 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-mint/60 text-primary">
-            <CheckCircle2 className="h-8 w-8" />
+            <QrCode className="h-8 w-8" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold">Thanh toán thành công</h1>
-          <p className="mt-3 text-muted-foreground">Đơn {ORDER_ID} đã được thanh toán {formatVND(summary.total)} qua {method.toUpperCase()}.</p>
-          <div className="mt-8 flex gap-3 justify-center">
-            <Button asChild variant="outline" className="rounded-full"><Link to="/theo-doi-don">Xem đơn</Link></Button>
-            <Button asChild className="rounded-full"><Link to="/danh-gia">Đánh giá người dọn</Link></Button>
-          </div>
+          <h1 className="mt-6 text-2xl font-bold">Chưa có đơn cần thanh toán</h1>
+          <p className="mt-3 text-muted-foreground">Vui lòng đặt lịch trước, sau đó quay lại bước chuyển khoản.</p>
+          <Button asChild className="mt-6 rounded-full">
+            <Link to="/dat-lich">Đặt người dọn</Link>
+          </Button>
         </section>
       </SiteLayout>
     );
   }
 
-  const methods: { v: MethodKey; l: string; icon: typeof Wallet }[] = [
-    { v: "momo", l: "Ví MoMo", icon: Wallet },
-    { v: "vnpay", l: "VNPay QR", icon: CreditCard },
-    { v: "transfer", l: "Chuyển khoản ngân hàng", icon: Landmark },
-    { v: "cash", l: "Tiền mặt khi hoàn tất", icon: Wallet },
-  ];
+  const pending: BookingDraft = draft;
+  const estimate = estimatePrice(
+    pending.rooms ?? 1,
+    pending.urgency === "urgent" ? "urgent" : "normal",
+    (pending.room_type ?? "standard") as RoomTypeKey,
+  );
+  const transferContent = buildTransferContent(pending.phone, pending.code);
+  const qrSrc = qrFailed
+    ? buildVietQrUrl(pending.price, transferContent)
+    : BANK_ACCOUNT.qrImage;
 
-  const showQR = method === "momo" || method === "vnpay" || method === "transfer";
+  async function onConfirm() {
+    if (saving || authLoading) return;
+    if (!isAuthenticated || !user) {
+      toast.error("Vui lòng đăng nhập bằng tài khoản chủ cơ sở để gửi đơn");
+      void navigate({ to: "/dang-nhap", search: { next: "/thanh-toan" } });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("bookings")
+        .insert({
+          ...pending,
+          host_id: user.id,
+          status: "pending",
+          payment_method: PAYMENT_METHOD,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      clearBookingDraft();
+      toast.success("Đã gửi đơn – CleanLink sẽ xác nhận sau khi nhận được chuyển khoản");
+      void navigate({ to: "/don/$id", params: { id: data.id } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Không gửi được đơn, vui lòng thử lại");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <SiteLayout>
       <section className="mx-auto max-w-3xl px-4 md:px-6 py-10">
-        <p className="text-xs font-medium text-primary uppercase tracking-wider">Đơn {ORDER_ID} · Mai House Homestay</p>
-        <h1 className="mt-1 text-3xl font-bold">Thanh toán</h1>
+        <p className="text-xs font-medium text-primary uppercase tracking-wider">
+          Đơn {pending.code} · {pending.property_name}
+        </p>
+        <h1 className="mt-1 text-3xl font-bold">Thanh toán chuyển khoản</h1>
 
         <div className="mt-6 grid gap-6 md:grid-cols-[1fr_320px]">
           <div className="rounded-2xl bg-card border border-border/60 shadow-card p-6">
-            <h2 className="font-semibold">Chọn phương thức</h2>
-            <RadioGroup value={method} onValueChange={(v) => setMethod(v as MethodKey)} className="mt-4 grid gap-2">
-              {methods.map((m) => (
-                <label
-                  key={m.v}
-                  className="flex items-center gap-3 rounded-xl border border-border p-4 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30"
-                >
-                  <RadioGroupItem value={m.v} />
-                  <m.icon className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium flex-1">{m.l}</span>
-                </label>
-              ))}
-            </RadioGroup>
+            <div className="flex items-center gap-2">
+              <QrCode className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-semibold">Quét mã VietQR để chuyển khoản</h2>
+            </div>
 
-            {showQR && <VirtualQR method={method} />}
-
-            {method === "cash" && (
-              <div className="mt-4 rounded-xl border border-border/70 bg-mint/20 p-5 text-sm text-muted-foreground">
-                Thanh toán bằng tiền mặt cho người dọn sau khi hoàn tất dịch vụ. Vui lòng chuẩn bị đúng số tiền {formatVND(summary.total)}.
+            <div className="mt-4 flex flex-col items-center">
+              <div className="rounded-2xl bg-white p-3 shadow-card border border-border/60">
+                <img
+                  src={qrSrc}
+                  onError={() => setQrFailed(true)}
+                  alt={`Mã QR chuyển khoản ${BANK_ACCOUNT.bankName} – ${BANK_ACCOUNT.serviceName} – ${BANK_ACCOUNT.accountName}`}
+                  className="mx-auto block h-auto w-full max-w-[280px] rounded-xl object-contain"
+                />
               </div>
-            )}
+              <p className="mt-3 text-xs text-muted-foreground text-center">
+                {BANK_ACCOUNT.network} · Mở app ngân hàng → Quét mã QR → Kiểm tra số tiền và nội dung chuyển khoản.
+              </p>
+            </div>
+
+            <dl className="mt-5 space-y-3 text-sm">
+              <CopyRow label="Ngân hàng" value={BANK_ACCOUNT.bankDisplay} />
+              <CopyRow label="Đơn vị" value={BANK_ACCOUNT.serviceName} />
+              <CopyRow label="Chủ tài khoản" value={BANK_ACCOUNT.accountName} />
+              <CopyRow label="Số tài khoản" value={BANK_ACCOUNT.accountNumber} />
+              <CopyRow label="Số tiền" value={formatVND(pending.price)} copyValue={String(pending.price)} />
+              <CopyRow label="Nội dung" value={transferContent} />
+              <CopyRow label="Hotline hỗ trợ" value={CONTACT.hotline} copyValue={CONTACT.hotline.replace(/\s/g, "")} />
+            </dl>
+
+            <div className="mt-5 flex items-start gap-2 rounded-lg bg-mint/30 p-3 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" />
+              Nội dung chuyển khoản theo cú pháp: [SĐT khách] - [Mã đơn]. Vui lòng giữ đúng nội dung để CleanLink đối soát nhanh.
+            </div>
           </div>
 
           <aside className="rounded-2xl bg-card border border-border/60 shadow-card p-6 h-fit space-y-3 text-sm">
             <h3 className="font-semibold">Tóm tắt đơn</h3>
-            <div className="flex justify-between"><span className="text-muted-foreground">Số phòng</span><span>{summary.rooms}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(summary.subtotal)}</span></div>
-            <div className="flex justify-between text-amber-700"><span>Phụ phí gấp</span><span>{formatVND(summary.urgent)}</span></div>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Loại phòng</span>
+              <span className="text-right">{roomTypeLabel(pending.room_type ?? "standard")}</span>
+            </div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Số phòng</span><span>{pending.rooms}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(estimate.subtotal)}</span></div>
+            {estimate.urgentFee > 0 && (
+              <div className="flex justify-between text-amber-700"><span>Phụ thu đặt gấp</span><span>{formatVND(estimate.urgentFee)}</span></div>
+            )}
             <div className="border-t border-border/60 pt-3 flex justify-between items-baseline">
               <span>Tổng</span>
-              <span className="text-2xl font-bold text-primary">{formatVND(summary.total)}</span>
+              <span className="text-2xl font-bold text-primary">{formatVND(pending.price)}</span>
             </div>
-            <Button
-              className="w-full rounded-full mt-3"
-              onClick={() => {
-                setPaid(true);
-                toast.success(
-                  showQR ? "Đã ghi nhận thanh toán qua mã QR (demo)" : "Thanh toán mock thành công",
-                );
-              }}
-            >
-              {showQR ? "Tôi đã quét mã & thanh toán" : `Thanh toán ${formatVND(summary.total)}`}
+            <Button className="w-full rounded-full mt-3" disabled={saving} onClick={() => void onConfirm()}>
+              {saving ? "Đang gửi đơn…" : "Tôi đã chuyển khoản"}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">Đây là thanh toán demo, chưa kết nối cổng thanh toán thật.</p>
+            <p className="text-xs text-muted-foreground text-center">
+              Đơn sẽ ở trạng thái “Chờ xác nhận” cho đến khi CleanLink nhận được tiền.
+            </p>
+            <Button asChild variant="outline" className="w-full rounded-full">
+              <Link to="/dat-lich">Quay lại chỉnh sửa</Link>
+            </Button>
+            <a
+              href={CONTACT.hotlineHref}
+              className="flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-primary"
+            >
+              <Phone className="h-3.5 w-3.5" /> Cần hỗ trợ? Gọi {CONTACT.hotline}
+            </a>
           </aside>
         </div>
       </section>

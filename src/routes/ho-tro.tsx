@@ -14,6 +14,7 @@ import {
 import { Phone, Mail, MessageCircle, LifeBuoy } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CONTACT } from "@/lib/contact-info";
 import {
   Accordion,
   AccordionContent,
@@ -111,9 +112,9 @@ function SupportPage() {
 
         <aside className="space-y-4 h-fit">
           {[
-            { icon: Phone, label: "Hotline 24/7", value: "0905 123 456" },
-            { icon: MessageCircle, label: "Zalo OA", value: "zalo.me/cleanlink" },
-            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com" },
+            { icon: Phone, label: "Hotline", value: CONTACT.hotline, href: CONTACT.hotlineHref },
+            { icon: MessageCircle, label: "Zalo", value: CONTACT.zaloDisplay, href: CONTACT.zaloUrl },
+            { icon: Mail, label: "Email", value: "cleanlink.quynhon@gmail.com", href: "mailto:cleanlink.quynhon@gmail.com" },
           ].map((c) => (
             <div key={c.label} className="flex items-start gap-4 rounded-2xl bg-card p-5 border border-border/60 shadow-card">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-mint/50 text-mint-foreground shrink-0">
@@ -121,7 +122,13 @@ function SupportPage() {
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">{c.label}</p>
-                <p className="font-semibold">{c.value}</p>
+                <a
+                  href={c.href}
+                  {...(c.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="font-semibold hover:text-primary"
+                >
+                  {c.value}
+                </a>
               </div>
             </div>
           ))}

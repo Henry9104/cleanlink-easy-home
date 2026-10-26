@@ -36,6 +36,13 @@
       "when": 1791795254421,
       "tag": "0004_admin_view_all",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793033381921,
+      "tag": "0005_booking_payment_method",
+      "breakpoints": true
     }
   ]
 }
