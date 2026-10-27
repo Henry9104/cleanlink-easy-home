@@ -10,11 +10,13 @@ import {
   Wallet,
   Star,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmPaymentDialog } from "@/components/booking/ConfirmPaymentDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -25,12 +27,17 @@ import {
   timeSlots,
   statusLabel,
   statusColor,
+  paymentStatusLabel,
+  paymentStatusColor,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
 import { addonLabels, serviceSummary } from "@/lib/pricing";
 import {
+  confirmBookingPayment,
   fetchBooking,
   flowSteps,
+  getErrorMessage,
+  getPaymentStatus,
   stepIndex,
   signedPhotoUrl,
   updateBooking,
@@ -60,10 +67,12 @@ export const Route = createFileRoute("/don/$id")({
 function BookingDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { user, profile, role, loading: authLoading, isAuthenticated } = useAuth();
+  const { user, profile, role, isAdmin, loading: authLoading, isAuthenticated } = useAuth();
   const [booking, setBooking] = useState<BookingRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
   const [beforeUrl, setBeforeUrl] = useState<string | null>(null);
   const [afterUrl, setAfterUrl] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
@@ -103,7 +112,9 @@ function BookingDetailPage() {
         <div className="mx-auto max-w-3xl px-4 py-20 text-center">
           <h1 className="text-2xl font-bold">Không tìm thấy đơn này</h1>
           <p className="mt-2 text-muted-foreground">Đơn có thể đã bị huỷ hoặc bạn không có quyền xem.</p>
-          <Button asChild className="mt-6 rounded-full"><Link to="/theo-doi-don">Về danh sách đơn</Link></Button>
+          <Button asChild className="mt-6 rounded-full">
+            <Link to="/theo-doi-don">Về danh sách đơn</Link>
+          </Button>
         </div>
       </SiteLayout>
     );
@@ -113,6 +124,7 @@ function BookingDetailPage() {
   const isMyJob = booking.cleaner_id === user?.id;
   const isCleaner = role === "cleaner";
   const status = booking.status as BookingStatus;
+  const payStatus = getPaymentStatus(booking);
   const done = booking.checklist_done ?? [];
   const allDone = done.length === checklistItems.length;
   const current = stepIndex(status);
@@ -124,9 +136,27 @@ function BookingDetailPage() {
       await reload();
       toast.success(ok);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Có lỗi xảy ra, vui lòng thử lại");
+      toast.error(getErrorMessage(e, "Có lỗi xảy ra, vui lòng thử lại"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleAdminConfirmPayment(target: BookingRow) {
+    if (isConfirmingPayment) return;
+    setIsConfirmingPayment(true);
+    try {
+      const updated = await confirmBookingPayment(target.id);
+      setBooking(updated);
+      setConfirmOpen(false);
+      toast.success(
+        `Đã xác nhận thanh toán đơn ${target.code} – đơn chuyển sang đang tìm người dọn`,
+      );
+      await reload();
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Không xác nhận được thanh toán, vui lòng thử lại"));
+    } finally {
+      setIsConfirmingPayment(false);
     }
   }
 
@@ -147,7 +177,10 @@ function BookingDetailPage() {
     if (!booking) return;
     await run(async () => {
       const path = await uploadBookingPhoto(booking.id, kind, file);
-      await updateBooking(booking.id, kind === "before" ? { photo_before: path } : { photo_after: path });
+      await updateBooking(
+        booking.id,
+        kind === "before" ? { photo_before: path } : { photo_after: path },
+      );
     }, "Đã tải hình ảnh lên");
   }
 
@@ -194,10 +227,52 @@ function BookingDetailPage() {
             <p className="text-xs text-muted-foreground">Mã đơn</p>
             <h1 className="text-2xl font-bold font-mono">{booking.code}</h1>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusColor[status]}`}>
-            {statusLabel[status]}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold border ${paymentStatusColor[payStatus]}`}
+            >
+              {paymentStatusLabel[payStatus]}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusColor[status]}`}
+            >
+              {statusLabel[status]}
+            </span>
+          </div>
         </div>
+
+        {/* Quản trị viên xác nhận thanh toán ngay trong trang chi tiết đơn */}
+        {isAdmin && payStatus === "pending" && (
+          <div className="mt-6 rounded-2xl bg-amber-50 border border-amber-200 p-5 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="font-semibold text-amber-950">Đơn đang chờ xác nhận tiền chuyển khoản</p>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Số tiền cần đối soát VietQR:{" "}
+                  <span className="font-bold">{formatVND(booking.price)}</span> · Sau khi xác nhận, đơn sẽ
+                  chuyển sang tìm người dọn.
+                </p>
+              </div>
+            </div>
+            <Button
+              className="rounded-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={isConfirmingPayment}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {isConfirmingPayment ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Đang xác nhận…
+                </>
+              ) : (
+                "Xác nhận thanh toán"
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Thông tin đơn */}
         <div className="mt-6 rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
@@ -206,8 +281,16 @@ function BookingDetailPage() {
             <MapPin className="h-3.5 w-3.5" /> {booking.address} · {labelFrom(areas, booking.area)}
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <Info icon={<Clock className="h-3 w-3" />} label="Ngày & khung giờ" value={`${booking.service_date} · ${labelFrom(timeSlots, booking.time_slot)}`} />
-            <Info icon={<CheckCircle2 className="h-3 w-3" />} label="Dịch vụ" value={serviceSummary(booking.room_type, booking.rooms)} />
+            <Info
+              icon={<Clock className="h-3 w-3" />}
+              label="Ngày & khung giờ"
+              value={`${booking.service_date} · ${labelFrom(timeSlots, booking.time_slot)}`}
+            />
+            <Info
+              icon={<CheckCircle2 className="h-3 w-3" />}
+              label="Dịch vụ"
+              value={serviceSummary(booking.room_type, booking.rooms)}
+            />
             <Info icon={<Wallet className="h-3 w-3" />} label="Tổng đơn" value={formatVND(booking.price)} />
           </div>
           {(booking.addons ?? []).length > 0 && (
@@ -218,11 +301,15 @@ function BookingDetailPage() {
           )}
           {booking.note && (
             <p className="mt-4 rounded-xl bg-mint/20 border border-border/60 p-3 text-sm">
-              <span className="font-medium">Ghi chú: </span>{booking.note}
+              <span className="font-medium">Ghi chú: </span>
+              {booking.note}
             </p>
           )}
           <p className="mt-3 text-sm text-muted-foreground">
-            Người dọn: <span className="font-medium text-foreground">{booking.cleaner_name || "Đang tìm người dọn"}</span>
+            Người dọn:{" "}
+            <span className="font-medium text-foreground">
+              {booking.cleaner_name || "Đang tìm người dọn"}
+            </span>
             {" · "}Liên hệ: {booking.phone}
           </p>
         </div>
@@ -233,12 +320,18 @@ function BookingDetailPage() {
           <ol className="mt-4 space-y-3">
             {flowSteps.map((s, i) => (
               <li key={s.key} className="flex items-start gap-3">
-                <div className={`mt-0.5 h-6 w-6 rounded-full flex items-center justify-center ${
-                  i <= current ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                } ${i === current ? "ring-4 ring-primary/20" : ""}`}>
+                <div
+                  className={`mt-0.5 h-6 w-6 rounded-full flex items-center justify-center ${
+                    i <= current
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  } ${i === current ? "ring-4 ring-primary/20" : ""}`}
+                >
                   {i <= current && <CheckCircle2 className="h-3.5 w-3.5" />}
                 </div>
-                <p className={`text-sm font-medium ${i === current ? "text-primary" : ""}`}>{s.label}</p>
+                <p className={`text-sm font-medium ${i === current ? "text-primary" : ""}`}>
+                  {s.label}
+                </p>
               </li>
             ))}
           </ol>
@@ -276,22 +369,34 @@ function BookingDetailPage() {
         <div className="mt-6 rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Danh sách công việc</h2>
-            <span className="text-sm font-bold text-primary">{done.length}/{checklistItems.length} công việc đã hoàn thành</span>
+            <span className="text-sm font-bold text-primary">
+              {done.length}/{checklistItems.length} công việc đã hoàn thành
+            </span>
           </div>
           <div className="mt-2 h-2.5 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${(done.length / checklistItems.length) * 100}%` }} />
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${(done.length / checklistItems.length) * 100}%` }}
+            />
           </div>
           <ul className="mt-4 space-y-2">
             {checklistItems.map((it, i) => {
               const isDone = done.includes(it.id);
               return (
                 <li key={it.id}>
-                  <label className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                    isDone ? "border-primary bg-mint/30" : "border-border bg-card"
-                  } ${isMyJob ? "cursor-pointer hover:border-primary/40" : "opacity-90"}`}>
-                    <Checkbox checked={isDone} disabled={!isMyJob || busy} onCheckedChange={() => void toggleItem(it.id)} />
+                  <label
+                    className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                      isDone ? "border-primary bg-mint/30" : "border-border bg-card"
+                    } ${isMyJob ? "cursor-pointer hover:border-primary/40" : "opacity-90"}`}
+                  >
+                    <Checkbox
+                      checked={isDone}
+                      disabled={!isMyJob || busy}
+                      onCheckedChange={() => void toggleItem(it.id)}
+                    />
                     <span className="flex-1 text-sm font-medium">
-                      <span className="text-muted-foreground mr-2">{i + 1}.</span>{it.label}
+                      <span className="text-muted-foreground mr-2">{i + 1}.</span>
+                      {it.label}
                     </span>
                     {isDone && <CheckCircle2 className="h-5 w-5 text-primary" />}
                   </label>
@@ -300,14 +405,26 @@ function BookingDetailPage() {
             })}
           </ul>
           {!isMyJob && (
-            <p className="mt-3 text-xs text-muted-foreground">Người dọn sẽ đánh dấu từng công việc khi thực hiện.</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Người dọn sẽ đánh dấu từng công việc khi thực hiện.
+            </p>
           )}
         </div>
 
         {/* Hình ảnh */}
         <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <PhotoCard label="Ảnh trước khi dọn" url={beforeUrl} canUpload={isMyJob && !busy} onPick={(f) => void onUpload("before", f)} />
-          <PhotoCard label="Ảnh sau khi dọn" url={afterUrl} canUpload={isMyJob && !busy} onPick={(f) => void onUpload("after", f)} />
+          <PhotoCard
+            label="Ảnh trước khi dọn"
+            url={beforeUrl}
+            canUpload={isMyJob && !busy}
+            onPick={(f) => void onUpload("before", f)}
+          />
+          <PhotoCard
+            label="Ảnh sau khi dọn"
+            url={afterUrl}
+            canUpload={isMyJob && !busy}
+            onPick={(f) => void onUpload("after", f)}
+          />
         </div>
 
         {/* Hành động theo vai trò */}
@@ -316,7 +433,11 @@ function BookingDetailPage() {
             <p className="text-sm text-muted-foreground">
               Hoàn thành đủ {checklistItems.length} công việc và tải ảnh sau khi dọn để gửi cho chủ cơ sở.
             </p>
-            <Button className="rounded-full" disabled={!allDone || !booking.photo_after || busy} onClick={() => void sendPhotos()}>
+            <Button
+              className="rounded-full"
+              disabled={!allDone || !booking.photo_after || busy}
+              onClick={() => void sendPhotos()}
+            >
               {busy && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Gửi hình ảnh & báo hoàn thành
             </Button>
           </div>
@@ -326,7 +447,9 @@ function BookingDetailPage() {
           <div className="mt-6 rounded-2xl bg-mint/40 border border-mint p-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-semibold">Người dọn đã báo hoàn thành</p>
-              <p className="text-sm text-muted-foreground">Kiểm tra hình ảnh và xác nhận nếu bạn hài lòng với kết quả.</p>
+              <p className="text-sm text-muted-foreground">
+                Kiểm tra hình ảnh và xác nhận nếu bạn hài lòng với kết quả.
+              </p>
             </div>
             <Button className="rounded-full" disabled={busy} onClick={() => void confirmComplete()}>
               Xác nhận hoàn thành
@@ -340,7 +463,11 @@ function BookingDetailPage() {
             <div className="mt-3 flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} type="button" onClick={() => setRating(n)} aria-label={`${n} sao`}>
-                  <Star className={`h-7 w-7 ${n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"}`} />
+                  <Star
+                    className={`h-7 w-7 ${
+                      n <= rating ? "fill-primary text-primary" : "text-muted-foreground/40"
+                    }`}
+                  />
                 </button>
               ))}
             </div>
@@ -364,13 +491,28 @@ function BookingDetailPage() {
         )}
 
         <div className="mt-8 flex flex-wrap gap-3">
+          {isAdmin && (
+            <Button asChild variant="outline" className="rounded-full">
+              <Link to="/admin">Về Bảng điều khiển Admin</Link>
+            </Button>
+          )}
           <Button asChild variant="outline" className="rounded-full">
             <Link to={isCleaner ? "/nguoi-don" : "/theo-doi-don"}>
               {isCleaner ? "Về danh sách công việc" : "Về danh sách đơn của tôi"}
             </Link>
           </Button>
-          <Button asChild variant="ghost" className="rounded-full"><Link to="/ho-tro">Liên hệ hỗ trợ</Link></Button>
+          <Button asChild variant="ghost" className="rounded-full">
+            <Link to="/ho-tro">Liên hệ hỗ trợ</Link>
+          </Button>
         </div>
+
+        <ConfirmPaymentDialog
+          booking={booking}
+          open={confirmOpen}
+          isConfirming={isConfirmingPayment}
+          onOpenChange={setConfirmOpen}
+          onConfirm={(target) => void handleAdminConfirmPayment(target)}
+        />
       </section>
     </SiteLayout>
   );
@@ -379,7 +521,9 @@ function BookingDetailPage() {
 function Info({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-xl bg-muted/60 p-3">
-      <p className="text-xs text-muted-foreground flex items-center gap-1">{icon} {label}</p>
+      <p className="text-xs text-muted-foreground flex items-center gap-1">
+        {icon} {label}
+      </p>
       <p className="mt-0.5 font-semibold text-sm">{value}</p>
     </div>
   );
@@ -403,9 +547,13 @@ function PhotoCard({
         {url ? (
           <img src={url} alt={label} className="h-full w-full object-cover" />
         ) : (
-          <span className="text-sm text-muted-foreground flex items-center gap-2"><Camera className="h-4 w-4" /> Chưa có hình ảnh</span>
+          <span className="text-sm text-muted-foreground flex items-center gap-2">
+            <Camera className="h-4 w-4" /> Chưa có hình ảnh
+          </span>
         )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-xs text-white">{label}</div>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-xs text-white">
+          {label}
+        </div>
       </div>
       {canUpload && (
         <div className="p-4">
@@ -420,7 +568,12 @@ function PhotoCard({
               e.target.value = "";
             }}
           />
-          <Button size="sm" variant="outline" className="rounded-full w-full" onClick={() => inputRef.current?.click()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-full w-full"
+            onClick={() => inputRef.current?.click()}
+          >
             <Upload className="h-3.5 w-3.5 mr-1" /> Tải ảnh lên
           </Button>
         </div>
