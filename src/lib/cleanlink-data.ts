@@ -85,17 +85,6 @@ export const propertyTypes = [
 
 export type RoomTypeKey = "standard" | "large" | "family" | "kitchen" | "special";
 
-export const roomTypes: readonly { value: RoomTypeKey; label: string }[] = [
-  { value: "standard", label: "Phòng tiêu chuẩn (dưới 25 m²)" },
-  { value: "large", label: "Phòng lớn (25–40 m²)" },
-  { value: "family", label: "Phòng gia đình (40–60 m²)" },
-  { value: "kitchen", label: "Phòng có bếp nhỏ" },
-  { value: "special", label: "Phòng đặc biệt (trên 60 m²)" },
-];
-
-export function roomTypeLabel(value: string) {
-  return roomTypes.find((r) => r.value === value)?.label ?? "Phòng tiêu chuẩn";
-}
 
 export const areas = [
   { value: "trung_tam", label: "Trung tâm Quy Nhơn" },
@@ -106,9 +95,13 @@ export const areas = [
 ] as const;
 
 export const timeSlots = [
+  { value: "08-10", label: "08:00 – 10:00" },
   { value: "11-12", label: "11:00 – 12:00" },
   { value: "12-13", label: "12:00 – 13:00" },
   { value: "13-14", label: "13:00 – 14:00" },
+  { value: "15-17", label: "15:00 – 17:00" },
+  { value: "18-20", label: "18:00 – 20:00" },
+  { value: "20-22", label: "20:00 – 22:00" },
   { value: "khac", label: "Khung giờ khác" },
 ] as const;
 
@@ -190,6 +183,9 @@ export type PriceSplit = {
   platform: number | null;
 };
 
+// Tuỳ chọn có khóa định danh (dùng cho form ước tính / đặt lịch)
+export type PricedOption = PriceSplit & { value: string; label: string };
+
 // Bảng 1: Giá dọn phòng lưu trú
 export const ROOM_PRICING: Record<RoomTypeKey, PriceSplit & { label: string }> = {
   standard: { label: "Phòng tiêu chuẩn dưới 25m²", customer: 60000, cleaner: 50000, platform: 10000 },
@@ -225,22 +221,22 @@ export const ROOM_COUNT_PRICING: { rooms: number; price: number }[] = [1, 2, 3, 
 export const ROOM_COUNT_CONTRACT_THRESHOLD = 10;
 
 // Bảng 3: Hình thức A – Dọn dẹp nhà ở theo giờ
-export const HOURLY_PRICING: (PriceSplit & { label: string })[] = [
-  { label: "2 giờ", customer: 140000, cleaner: 120000, platform: 20000 },
-  { label: "3 giờ", customer: 210000, cleaner: 180000, platform: 30000 },
-  { label: "4 giờ", customer: 280000, cleaner: 240000, platform: 40000 },
-  { label: "5 giờ", customer: 350000, cleaner: 300000, platform: 50000 },
-  { label: "6 giờ", customer: 420000, cleaner: 360000, platform: 60000 },
+export const HOURLY_PRICING: PricedOption[] = [
+  { value: "2h", label: "2 giờ", customer: 140000, cleaner: 120000, platform: 20000 },
+  { value: "3h", label: "3 giờ", customer: 210000, cleaner: 180000, platform: 30000 },
+  { value: "4h", label: "4 giờ", customer: 280000, cleaner: 240000, platform: 40000 },
+  { value: "5h", label: "5 giờ", customer: 350000, cleaner: 300000, platform: 50000 },
+  { value: "6h", label: "6 giờ", customer: 420000, cleaner: 360000, platform: 60000 },
 ];
 
 // Hình thức B – Dọn căn hộ theo diện tích
-export const AREA_PRICING: (PriceSplit & { label: string })[] = [
-  { label: "Studio (dưới 40m²)", customer: 140000, cleaner: 120000, platform: 20000 },
-  { label: "Căn hộ 1 phòng ngủ (40–60m²)", customer: 180000, cleaner: 155000, platform: 25000 },
-  { label: "Căn hộ 2 phòng ngủ (60–80m²)", customer: 240000, cleaner: 205000, platform: 35000 },
-  { label: "Căn hộ 3 phòng ngủ (80–110m²)", customer: 320000, cleaner: 275000, platform: 45000 },
-  { label: "Nhà phố nhỏ (80–120m²)", customer: 350000, cleaner: 300000, platform: 50000 },
-  { label: "Nhà lớn trên 120m²", customer: null, cleaner: null, platform: null },
+export const AREA_PRICING: PricedOption[] = [
+  { value: "studio", label: "Studio (dưới 40m²)", customer: 140000, cleaner: 120000, platform: 20000 },
+  { value: "1br", label: "Căn hộ 1 phòng ngủ (40–60m²)", customer: 180000, cleaner: 155000, platform: 25000 },
+  { value: "2br", label: "Căn hộ 2 phòng ngủ (60–80m²)", customer: 240000, cleaner: 205000, platform: 35000 },
+  { value: "3br", label: "Căn hộ 3 phòng ngủ (80–110m²)", customer: 320000, cleaner: 275000, platform: 45000 },
+  { value: "townhouse", label: "Nhà phố nhỏ (80–120m²)", customer: 350000, cleaner: 300000, platform: 50000 },
+  { value: "large", label: "Nhà lớn trên 120m²", customer: null, cleaner: null, platform: null },
 ];
 
 // Bảng giá phụ thu đề xuất
@@ -256,25 +252,25 @@ export const SURCHARGES: { label: string; value: string }[] = [
   { label: "Ngoài khu vực phục vụ tiêu chuẩn", value: "Phụ thu di chuyển được báo trước" },
 ];
 
-// Phụ thu đặt gấp tính theo đơn (không tính riêng từng phòng)
-export function urgentFee() {
-  return URGENT_FEE;
-}
+// Phụ thu dọn sau 20 giờ (tính theo đơn)
+export const AFTER_HOURS_FEE = 20000;
 
-export function estimatePrice(
-  rooms: number,
-  urgency: "normal" | "urgent",
-  roomType: RoomTypeKey = "standard",
-) {
-  const r = Math.max(1, rooms);
-  const perRoom = ROOM_PRICE[roomType];
-  // Phòng đặc biệt (trên 60m²) hoặc hợp đồng trên 10 phòng: báo giá riêng
-  const quote = roomType === "special" || r > ROOM_COUNT_CONTRACT_THRESHOLD;
-  const subtotal = perRoom * r;
-  const fee = urgency === "urgent" ? URGENT_FEE : 0;
-  const total = subtotal + fee;
-  return { perRoom, subtotal, urgentFee: fee, total, quote };
-}
+// Ba gói dịch vụ chính
+export type ServiceType = "lodging" | "hourly" | "area";
+
+export const serviceTypes: readonly { value: ServiceType; label: string; hint: string }[] = [
+  { value: "lodging", label: "Dọn phòng lưu trú", hint: "Homestay / Khách sạn" },
+  { value: "hourly", label: "Dọn dẹp nhà ở theo giờ", hint: "Hình thức A" },
+  { value: "area", label: "Dọn căn hộ theo diện tích", hint: "Hình thức B" },
+];
+
+// Dịch vụ bổ sung có phụ thu (fee = null: báo giá riêng / báo giá thêm trước khi làm)
+export const EXTRA_OPTIONS: readonly { value: string; label: string; fee: number | null; note: string }[] = [
+  { value: "fridge", label: "Vệ sinh tủ lạnh bên trong", fee: 30000, note: "+30.000đ" },
+  { value: "microwave", label: "Vệ sinh lò vi sóng bên trong", fee: 20000, note: "+20.000đ" },
+  { value: "glass", label: "Vệ sinh kính khó tiếp cận", fee: null, note: "Báo giá riêng" },
+  { value: "dirty", label: "Dọn phòng bẩn nhiều", fee: null, note: "Báo giá thêm trước khi làm" },
+];
 
 export function formatVND(v: number) {
   return v.toLocaleString("vi-VN") + "đ";

@@ -3,7 +3,6 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -12,13 +11,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
+import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
+import { ServiceConfigurator } from "@/components/booking/ServiceConfigurator";
+import { DEFAULT_SELECTION, estimateOrder, saveSelection, type ServiceSelection } from "@/lib/pricing";
 import {
-  estimatePrice,
   formatVND,
   areas,
-  timeSlots,
   labelFrom,
-  roomTypeLabel,
   ROOM_PRICING,
   ROOM_PRICE_ORDER,
   ROOM_EXAMPLE,
@@ -27,11 +26,9 @@ import {
   HOURLY_PRICING,
   AREA_PRICING,
   SURCHARGES,
-  URGENT_FEE,
   type PriceSplit,
-  type RoomTypeKey,
 } from "@/lib/cleanlink-data";
-import { Zap, Info } from "lucide-react";
+import { Zap } from "lucide-react";
 
 export const Route = createFileRoute("/gia-du-kien")({
   head: () => ({
@@ -96,15 +93,18 @@ function SplitTable({
 
 function PricingPage() {
   const navigate = useNavigate();
-  const [rooms, setRooms] = useState(3);
-  const [urgency, setUrgency] = useState<"normal" | "urgent">("normal");
-  const [roomType, setRoomType] = useState<RoomTypeKey>("standard");
+  const [sel, setSel] = useState<ServiceSelection>(DEFAULT_SELECTION);
   const [propertyName, setPropertyName] = useState("");
   const [address, setAddress] = useState("");
   const [area, setArea] = useState("trung_tam");
-  const [timeSlot, setTimeSlot] = useState("13-14");
 
-  const price = estimatePrice(rooms, urgency, roomType);
+  const estimate = estimateOrder(sel);
+
+  // Chuyển cấu hình dịch vụ sang form đặt lịch → bước thanh toán QR dùng cùng tổng tiền
+  function goBooking() {
+    saveSelection(sel);
+    void navigate({ to: "/dat-lich" });
+  }
 
   return (
     <SiteLayout>
@@ -223,11 +223,13 @@ function PricingPage() {
           </div>
         </div>
 
-        <aside className="rounded-3xl bg-card border border-border/60 shadow-card p-6 h-fit lg:sticky lg:top-24 space-y-5">
+        <aside className="rounded-3xl bg-card border border-border/60 shadow-card p-6 h-fit space-y-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <div>
             <h3 className="font-semibold">Ước tính cho đơn của bạn</h3>
-            <p className="text-xs text-muted-foreground">Nhập thông tin để xem giá trước khi xác nhận.</p>
+            <p className="text-xs text-muted-foreground">Chọn dịch vụ để xem giá trước khi xác nhận.</p>
           </div>
+
+          <ServiceConfigurator value={sel} onChange={setSel} variant="narrow" />
 
           <div className="space-y-3 text-sm">
             <div>
@@ -241,71 +243,15 @@ function PricingPage() {
             <div>
               <Label>Khu vực</Label>
               <Select value={area} onValueChange={setArea}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1.5 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {areas.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Loại phòng</Label>
-              <RadioGroup
-                value={roomType}
-                onValueChange={(v) => setRoomType(v as RoomTypeKey)}
-                className="mt-1.5 grid gap-2"
-              >
-                {ROOM_PRICE_ORDER.map((k) => (
-                  <label key={k} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30">
-                    <RadioGroupItem value={k} />
-                    <span className="text-xs font-medium">
-                      {ROOM_PRICING[k].label} ({money(ROOM_PRICING[k].customer, "Báo giá riêng")})
-                    </span>
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
-            <div>
-              <Label htmlFor="r-slider">Số phòng: {rooms}</Label>
-              <input
-                id="r-slider"
-                type="range"
-                min={1}
-                max={15}
-                value={rooms}
-                onChange={(e) => setRooms(Number(e.target.value))}
-                className="w-full mt-2 accent-primary"
-              />
-            </div>
-            <div>
-              <Label>Khung giờ</Label>
-              <Select value={timeSlot} onValueChange={setTimeSlot}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Mức độ</Label>
-              <RadioGroup
-                value={urgency}
-                onValueChange={(v) => setUrgency(v as "normal" | "urgent")}
-                className="mt-1.5 grid gap-2"
-              >
-                {[
-                  { v: "normal", l: "Bình thường" },
-                  { v: "urgent", l: `Gấp – bắt đầu trong 2 giờ (+${formatVND(URGENT_FEE)}/đơn)` },
-                ].map((o) => (
-                  <label key={o.v} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:border-primary/50 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-mint/30">
-                    <RadioGroupItem value={o.v} />
-                    <span className="text-xs font-medium">{o.l}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-            </div>
           </div>
 
-          <div className="border-t border-border/60 pt-4 space-y-2 text-sm">
+          <div className="border-t border-border/60 pt-4 space-y-3">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Cơ sở</span><span className="truncate max-w-[60%] text-right text-foreground">{propertyName || "—"}</span>
             </div>
@@ -315,44 +261,15 @@ function PricingPage() {
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Khu vực</span><span className="text-foreground">{labelFrom(areas, area)}</span>
             </div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Loại phòng</span><span className="text-right">{roomTypeLabel(roomType)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Số phòng</span><span>{rooms} phòng</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Khung giờ</span><span>{labelFrom(timeSlots, timeSlot)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Mức độ</span><span>{urgency === "urgent" ? "Gấp" : "Bình thường"}</span></div>
-            {price.quote ? (
-              <div className="flex justify-between border-t border-border/40 pt-2">
-                <span className="font-medium">Tổng dự kiến</span>
-                <span className="font-bold text-primary">Báo giá riêng</span>
-              </div>
-            ) : (
-              <>
-                <div className="flex justify-between border-t border-border/40 pt-2"><span className="text-muted-foreground">Đơn giá/phòng</span><span>{formatVND(price.perRoom)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(price.subtotal)}</span></div>
-                {urgency === "urgent" && (
-                  <div className="flex justify-between text-amber-700"><span className="flex items-center gap-1"><Zap className="h-3 w-3" />Phụ thu đặt gấp</span><span>{formatVND(price.urgentFee)}</span></div>
-                )}
-                <div className="flex justify-between items-baseline pt-2 border-t border-border/40">
-                  <span className="font-medium">Tổng dự kiến</span>
-                  <span className="text-2xl font-bold text-primary">{formatVND(price.total)}</span>
-                </div>
-              </>
-            )}
-            {price.quote && (
-              <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3 flex items-start gap-2">
-                <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                {roomType === "special"
-                  ? "Phòng đặc biệt trên 60m² được báo giá riêng, vui lòng liên hệ CleanLink."
-                  : `Trên ${ROOM_COUNT_CONTRACT_THRESHOLD} phòng vui lòng liên hệ để nhận báo giá hợp đồng.`}
-              </div>
-            )}
+            <PriceBreakdown estimate={estimate} />
           </div>
 
           <div className="grid gap-2">
-            <Button className="w-full rounded-full" onClick={() => navigate({ to: "/dat-lich" })}>
+            <Button className="w-full rounded-full" disabled={estimate.baseQuote} onClick={goBooking}>
               Xác nhận đặt lịch
             </Button>
             <Button asChild variant="outline" className="w-full rounded-full">
-              <Link to="/dat-lich">Quay lại chỉnh sửa</Link>
+              <Link to="/dat-lich">Đặt lịch từ đầu</Link>
             </Button>
           </div>
         </aside>

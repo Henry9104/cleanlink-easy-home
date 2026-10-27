@@ -13,9 +13,9 @@ import {
   formatVND,
   statusLabel,
   statusColor,
-  roomTypeLabel,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
+import { serviceDetail, serviceHeadline } from "@/lib/pricing";
 
 const TITLE = "Công việc mới gần bạn – CleanLink cho người dọn";
 const DESC =
@@ -127,7 +127,7 @@ function CleanerPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-semibold">Dọn {b.rooms} phòng tại {b.property_name}</h3>
+                      <h3 className="text-lg font-semibold">{serviceHeadline(b.room_type, b.rooms)} tại {b.property_name}</h3>
                       {b.urgency === "urgent" && (
                         <span className="inline-flex items-center gap-1 text-xs rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 font-medium">
                           <Zap className="h-3 w-3" /> Gấp
@@ -138,7 +138,7 @@ function CleanerPage() {
                       <MapPin className="h-3.5 w-3.5" /> {b.address} · {labelFrom(areas, b.area)}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                      <Home className="h-3 w-3" /> {roomTypeLabel(b.room_type)}
+                      <Home className="h-3 w-3" /> {serviceDetail(b.room_type)}
                     </p>
                   </div>
                   <span className="rounded-full bg-mint/40 text-mint-foreground text-xs px-3 py-1 font-medium font-mono">{b.code}</span>
@@ -190,7 +190,7 @@ function CleanerPage() {
               return (
                 <article key={b.id} className="rounded-2xl bg-card border border-border/60 shadow-card p-5 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-semibold">Dọn {b.rooms} phòng · {b.property_name}</p>
+                    <p className="font-semibold">{serviceHeadline(b.room_type, b.rooms)} · {b.property_name}</p>
                     <p className="text-sm text-muted-foreground">{b.address} · {labelFrom(timeSlots, b.time_slot)}</p>
                   </div>
                   <div className="flex items-center gap-3">

@@ -14,6 +14,7 @@ import {
   statusColor,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
+import { serviceHeadline } from "@/lib/pricing";
 
 const TITLE = "Đơn dọn phòng của tôi – CleanLink";
 const DESC =
@@ -83,7 +84,7 @@ function TrackingPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold">Dọn {b.rooms} phòng · {b.property_name}</h2>
+                      <h2 className="text-lg font-semibold">{serviceHeadline(b.room_type, b.rooms)} · {b.property_name}</h2>
                       <span className="font-mono text-xs text-muted-foreground">{b.code}</span>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground flex items-center gap-1">

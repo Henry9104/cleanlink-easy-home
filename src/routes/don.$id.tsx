@@ -25,9 +25,9 @@ import {
   timeSlots,
   statusLabel,
   statusColor,
-  roomTypeLabel,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
+import { addonLabels, serviceSummary } from "@/lib/pricing";
 import {
   fetchBooking,
   flowSteps,
@@ -207,9 +207,15 @@ function BookingDetailPage() {
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <Info icon={<Clock className="h-3 w-3" />} label="Ngày & khung giờ" value={`${booking.service_date} · ${labelFrom(timeSlots, booking.time_slot)}`} />
-            <Info icon={<CheckCircle2 className="h-3 w-3" />} label="Số phòng" value={`${booking.rooms} phòng · ${roomTypeLabel(booking.room_type).toLowerCase()}`} />
+            <Info icon={<CheckCircle2 className="h-3 w-3" />} label="Dịch vụ" value={serviceSummary(booking.room_type, booking.rooms)} />
             <Info icon={<Wallet className="h-3 w-3" />} label="Tổng đơn" value={formatVND(booking.price)} />
           </div>
+          {(booking.addons ?? []).length > 0 && (
+            <p className="mt-4 text-sm">
+              <span className="font-medium">Yêu cầu thêm / dịch vụ bổ sung: </span>
+              <span className="text-muted-foreground">{addonLabels(booking.addons ?? []).join(", ")}</span>
+            </p>
+          )}
           {booking.note && (
             <p className="mt-4 rounded-xl bg-mint/20 border border-border/60 p-3 text-sm">
               <span className="font-medium">Ghi chú: </span>{booking.note}
