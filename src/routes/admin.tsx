@@ -18,6 +18,7 @@ import {
   labelFrom,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
+import { parseServiceKey, serviceDetail } from "@/lib/pricing";
 import { ClipboardList, Clock, PlayCircle, CheckCircle2, Users, Star, Wallet, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -158,7 +159,7 @@ function AdminPage() {
                       <TableCell><div className="font-medium">{b.property_name}</div><div className="text-xs text-muted-foreground">{b.address} · {b.phone}</div></TableCell>
                       <TableCell className="text-sm">{nameOf(b.host_id)}</TableCell>
                       <TableCell className="text-sm">{labelFrom(areas, b.area)}</TableCell>
-                      <TableCell className="text-right font-semibold">{b.rooms}</TableCell>
+                      <TableCell className="text-right font-semibold" title={serviceDetail(b.room_type)}>{parseServiceKey(b.room_type).serviceType === "lodging" ? b.rooms : "—"}</TableCell>
                       <TableCell className="text-sm whitespace-nowrap">
                         {new Date(b.service_date).toLocaleDateString("vi-VN")} · {labelFrom(timeSlots, b.time_slot)}
                         {b.urgency === "urgent" && <span className="ml-1 text-[10px] font-medium text-amber-700">GẤP</span>}

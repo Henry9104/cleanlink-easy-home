@@ -13,7 +13,9 @@ import {
   loadBookingDraft,
   type BookingDraft,
 } from "@/lib/bookings";
-import { estimatePrice, formatVND, roomTypeLabel, type RoomTypeKey } from "@/lib/cleanlink-data";
+import { PriceBreakdown } from "@/components/booking/PriceBreakdown";
+import { formatVND, labelFrom, timeSlots } from "@/lib/cleanlink-data";
+import { estimateOrder, selectionFromBooking, serviceDetail } from "@/lib/pricing";
 import { BANK_ACCOUNT, CONTACT, buildVietQrUrl } from "@/lib/contact-info";
 
 export const Route = createFileRoute("/thanh-toan")({
@@ -92,11 +94,8 @@ function PaymentPage() {
   }
 
   const pending: BookingDraft = draft;
-  const estimate = estimatePrice(
-    pending.rooms ?? 1,
-    pending.urgency === "urgent" ? "urgent" : "normal",
-    (pending.room_type ?? "standard") as RoomTypeKey,
-  );
+  const selection = selectionFromBooking(pending);
+  const estimate = estimateOrder(selection);
   const transferContent = buildTransferContent(pending.phone, pending.code);
   const qrSrc = qrFailed
     ? buildVietQrUrl(pending.price, transferContent)
@@ -180,17 +179,21 @@ function PaymentPage() {
           <aside className="rounded-2xl bg-card border border-border/60 shadow-card p-6 h-fit space-y-3 text-sm">
             <h3 className="font-semibold">Tóm tắt đơn</h3>
             <div className="flex justify-between gap-3">
-              <span className="text-muted-foreground">Loại phòng</span>
-              <span className="text-right">{roomTypeLabel(pending.room_type ?? "standard")}</span>
+              <span className="text-muted-foreground">Dịch vụ</span>
+              <span className="text-right">{serviceDetail(pending.room_type ?? "standard")}</span>
             </div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Số phòng</span><span>{pending.rooms}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatVND(estimate.subtotal)}</span></div>
-            {estimate.urgentFee > 0 && (
-              <div className="flex justify-between text-amber-700"><span>Phụ thu đặt gấp</span><span>{formatVND(estimate.urgentFee)}</span></div>
-            )}
-            <div className="border-t border-border/60 pt-3 flex justify-between items-baseline">
-              <span>Tổng</span>
-              <span className="text-2xl font-bold text-primary">{formatVND(pending.price)}</span>
+            <div className="flex justify-between gap-3">
+              <span className="text-muted-foreground">Ngày / giờ</span>
+              <span className="text-right">
+                {pending.service_date ? new Date(pending.service_date).toLocaleDateString("vi-VN") : "—"} · {labelFrom(timeSlots, selection.timeSlot)}
+              </span>
+            </div>
+            <div className="border-t border-border/60 pt-3">
+              <PriceBreakdown estimate={estimate} />
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="font-medium">Cần chuyển khoản</span>
+              <span className="text-xl font-bold text-primary">{formatVND(pending.price)}</span>
             </div>
             <Button className="w-full rounded-full mt-3" disabled={saving} onClick={() => void onConfirm()}>
               {saving ? "Đang gửi đơn…" : "Tôi đã chuyển khoản"}
