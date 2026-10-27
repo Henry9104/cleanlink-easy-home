@@ -9,10 +9,12 @@ import { ConfirmPaymentDialog } from "@/components/booking/ConfirmPaymentDialog"
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  applyLocalPaymentConfirmations,
   confirmBookingPayment,
+  ensureRlsCompatiblePendingRows,
   getErrorMessage,
   getPaymentStatus,
+  normalizeBookingRows,
+  syncPaymentReceipts,
   type BookingRow,
 } from "@/lib/bookings";
 import { toast } from "sonner";
@@ -38,6 +40,7 @@ import {
   ShieldAlert,
   CreditCard,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -77,32 +80,61 @@ function AdminPage() {
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [confirmTarget, setConfirmTarget] = useState<BookingRow | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadAdminData = useCallback(async () => {
-    const [b, p, r, ro] = await Promise.all([
-      supabase.from("bookings").select("*").order("created_at", { ascending: false }),
-      supabase
-        .from("profiles")
-        .select("id, phone, full_name, property_name, area, created_at")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("reviews")
-        .select("id, booking_id, rating, comment, created_at")
-        .order("created_at", { ascending: false }),
-      supabase.from("user_roles").select("user_id, role"),
-    ]);
-    setBookings(applyLocalPaymentConfirmations((b.data ?? []) as BookingRow[]));
-    setProfiles((p.data ?? []) as Profile[]);
-    setReviews((r.data ?? []) as Review[]);
-    setRoles((ro.data ?? []) as RoleRow[]);
+  const loadAdminData = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setRefreshing(true);
+    try {
+      await syncPaymentReceipts();
+      const [b, p, r, ro] = await Promise.all([
+        supabase.from("bookings").select("*").order("created_at", { ascending: false }),
+        supabase
+          .from("profiles")
+          .select("id, phone, full_name, property_name, area, created_at")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("reviews")
+          .select("id, booking_id, rating, comment, created_at")
+          .order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("user_id, role"),
+      ]);
+      const rawBookings = (b.data ?? []) as BookingRow[];
+      await ensureRlsCompatiblePendingRows(rawBookings);
+      setBookings(normalizeBookingRows(rawBookings));
+      setProfiles((p.data ?? []) as Profile[]);
+      setReviews((r.data ?? []) as Review[]);
+      setRoles((ro.data ?? []) as RoleRow[]);
+    } finally {
+      if (showSpinner) setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => {
     if (!isAdmin) return;
     void loadAdminData();
+
+    const channel = supabase
+      .channel("admin-bookings-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "bookings" },
+        () => {
+          void loadAdminData();
+        },
+      )
+      .subscribe();
+
+    const timer = window.setInterval(() => {
+      void loadAdminData();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(timer);
+      void supabase.removeChannel(channel);
+    };
   }, [isAdmin, loadAdminData]);
 
-  /** Xác nhận đã nhận chuyển khoản: cập nhật payment_status = paid, paid_at = now và status = searching */
+  /** Xác nhận đã nhận chuyển khoản: cập nhật payment_status = paid, paid_at = now và status = searching (READY_FOR_PICKUP) */
   async function handleConfirmPayment(target: BookingRow) {
     if (isConfirming) return;
     setIsConfirming(true);
@@ -111,7 +143,7 @@ function AdminPage() {
       setBookings((list) => list.map((b) => (b.id === target.id ? { ...b, ...updated } : b)));
       setConfirmTarget(null);
       toast.success(
-        `Đã xác nhận thanh toán đơn ${target.code} (${formatVND(target.price)}) – đơn chuyển sang đang tìm người dọn`,
+        `Đã xác nhận thanh toán đơn ${target.code} (${formatVND(target.price)}) – đơn đã chuyển sang chờ người dọn nhận việc`,
       );
       void loadAdminData();
     } catch (e) {
@@ -157,6 +189,9 @@ function AdminPage() {
     ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
     : "–";
   const pendingPaymentCount = bookings.filter((b) => getPaymentStatus(b) === "pending").length;
+  const waitingCleanerCount = bookings.filter(
+    (b) => b.status === "searching" && getPaymentStatus(b) === "paid" && !b.cleaner_id,
+  ).length;
   const paidRevenue = bookings
     .filter((b) => getPaymentStatus(b) === "paid" && b.status !== "cancelled")
     .reduce((s, b) => s + b.price, 0);
@@ -170,14 +205,14 @@ function AdminPage() {
     },
     {
       icon: CreditCard,
-      label: "Chờ xác nhận tiền",
+      label: "Chờ duyệt tiền",
       value: pendingPaymentCount,
       tint: "bg-amber-100 text-amber-800",
     },
     {
       icon: Clock,
       label: "Đang chờ người dọn",
-      value: bookings.filter((b) => b.status === "searching").length,
+      value: waitingCleanerCount,
       tint: "bg-orange-100 text-orange-700",
     },
     {
@@ -214,12 +249,27 @@ function AdminPage() {
           <div>
             <h1 className="text-3xl font-bold">Bảng điều khiển CleanLink</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Toàn bộ đơn, trạng thái thanh toán VietQR, người dùng và đánh giá trên hệ thống.
+              Duyệt thanh toán VietQR, điều phối đơn sang màn hình Người dọn và theo dõi tiến độ.
             </p>
           </div>
-          <Button asChild variant="outline">
-            <Link to="/">Về trang chủ</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={refreshing}
+              onClick={() => void loadAdminData(true)}
+            >
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              Làm mới
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/nguoi-don">Màn hình Người dọn</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">Về trang chủ</Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
@@ -330,7 +380,7 @@ function AdminPage() {
                                     Đang xác nhận…
                                   </>
                                 ) : (
-                                  "Xác nhận thanh toán"
+                                  "Xác nhận đã thanh toán"
                                 )}
                               </Button>
                             )}

@@ -121,6 +121,55 @@ export function bookingPrice(estimate: Estimate) {
   return estimate.baseQuote ? 0 : estimate.total;
 }
 
+/**
+ * Tính số tiền công thợ nhận được (cleanerTotal) và phí nền tảng CleanLink (platformFee)
+ * từ thông tin đơn đặt dọn phòng theo đúng bảng chia doanh thu.
+ */
+export function cleanerPayoutFromBooking(b: {
+  room_type?: string | null;
+  rooms?: number | null;
+  urgency?: string | null;
+  time_slot?: string | null;
+  addons?: string[] | null;
+  price?: number | null;
+}): { cleanerTotal: number; platformFee: number; customerTotal: number } {
+  const sel = selectionFromBooking(b);
+  let basePlatform = 0;
+  let baseCleaner = 0;
+
+  if (sel.serviceType === "lodging") {
+    const rooms = Math.min(Math.max(1, Math.round(sel.rooms)), MAX_ROOMS);
+    const info = ROOM_PRICING[sel.roomType];
+    baseCleaner = (info.cleaner ?? 0) * rooms;
+    basePlatform = (info.platform ?? 0) * rooms;
+  } else if (sel.serviceType === "hourly") {
+    const opt = HOURLY_PRICING.find((o) => o.value === sel.hourlyKey) ?? HOURLY_PRICING[0];
+    baseCleaner = opt.cleaner ?? 0;
+    basePlatform = opt.platform ?? 0;
+  } else {
+    const opt = AREA_PRICING.find((o) => o.value === sel.areaKey) ?? AREA_PRICING[0];
+    baseCleaner = opt.cleaner ?? 0;
+    basePlatform = opt.platform ?? 0;
+  }
+
+  let extraFee = 0;
+  if (sel.urgency === "urgent") extraFee += URGENT_FEE;
+  if (isAfter20(sel.timeSlot)) extraFee += AFTER_HOURS_FEE;
+  for (const opt of EXTRA_OPTIONS) {
+    if (sel.extras.includes(opt.value) && opt.fee !== null) {
+      extraFee += opt.fee;
+    }
+  }
+
+  const customerTotal = b.price ?? baseCleaner + basePlatform + extraFee;
+  const cleanerTotal = Math.max(0, customerTotal - basePlatform);
+  return {
+    cleanerTotal,
+    platformFee: basePlatform,
+    customerTotal,
+  };
+}
+
 // ===== Lưu dịch vụ vào cột room_type của đơn (không cần đổi cấu trúc database) =====
 // Gói 1: "standard" | "large" | "family" | "kitchen" | "special"
 // Gói 2: "hourly_<khóa>" · Gói 3: "area_<khóa>"

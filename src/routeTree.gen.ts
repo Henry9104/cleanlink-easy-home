@@ -28,7 +28,9 @@ import { Route as ThanhToanRouteImport } from './routes/thanh-toan'
 import { Route as TheoDoiDonRouteImport } from './routes/theo-doi-don'
 import { Route as TinNhanRouteImport } from './routes/tin-nhan'
 import { Route as DonIdRouteImport } from './routes/don.$id'
+import { Route as ApiCleanerAvailableOrdersRouteImport } from './routes/api.cleaner.available-orders'
 import { Route as ApiAdminOrdersIdConfirmPaymentRouteImport } from './routes/api.admin.orders.$id.confirm-payment'
+import { Route as ApiCleanerOrdersIdClaimRouteImport } from './routes/api.cleaner.orders.$id.claim'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -125,12 +127,23 @@ const DonIdRoute = DonIdRouteImport.update({
   path: '/don/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCleanerAvailableOrdersRoute =
+  ApiCleanerAvailableOrdersRouteImport.update({
+    id: '/api/cleaner/available-orders',
+    path: '/api/cleaner/available-orders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminOrdersIdConfirmPaymentRoute =
   ApiAdminOrdersIdConfirmPaymentRouteImport.update({
     id: '/api/admin/orders/$id/confirm-payment',
     path: '/api/admin/orders/$id/confirm-payment',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiCleanerOrdersIdClaimRoute = ApiCleanerOrdersIdClaimRouteImport.update({
+  id: '/api/cleaner/orders/$id/claim',
+  path: '/api/cleaner/orders/$id/claim',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -152,7 +165,9 @@ export interface FileRoutesByFullPath {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/cleaner/available-orders': typeof ApiCleanerAvailableOrdersRoute
   '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
+  '/api/cleaner/orders/$id/claim': typeof ApiCleanerOrdersIdClaimRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,7 +189,9 @@ export interface FileRoutesByTo {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/cleaner/available-orders': typeof ApiCleanerAvailableOrdersRoute
   '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
+  '/api/cleaner/orders/$id/claim': typeof ApiCleanerOrdersIdClaimRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -197,7 +214,9 @@ export interface FileRoutesById {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/cleaner/available-orders': typeof ApiCleanerAvailableOrdersRoute
   '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
+  '/api/cleaner/orders/$id/claim': typeof ApiCleanerOrdersIdClaimRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -221,7 +240,9 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/cleaner/available-orders'
     | '/api/admin/orders/$id/confirm-payment'
+    | '/api/cleaner/orders/$id/claim'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,7 +264,9 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/cleaner/available-orders'
     | '/api/admin/orders/$id/confirm-payment'
+    | '/api/cleaner/orders/$id/claim'
   id:
     | '__root__'
     | '/'
@@ -265,7 +288,9 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/cleaner/available-orders'
     | '/api/admin/orders/$id/confirm-payment'
+    | '/api/cleaner/orders/$id/claim'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -288,7 +313,9 @@ export interface RootRouteChildren {
   TheoDoiDonRoute: typeof TheoDoiDonRoute
   TinNhanRoute: typeof TinNhanRoute
   DonIdRoute: typeof DonIdRoute
+  ApiCleanerAvailableOrdersRoute: typeof ApiCleanerAvailableOrdersRoute
   ApiAdminOrdersIdConfirmPaymentRoute: typeof ApiAdminOrdersIdConfirmPaymentRoute
+  ApiCleanerOrdersIdClaimRoute: typeof ApiCleanerOrdersIdClaimRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -426,11 +453,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cleaner/available-orders': {
+      id: '/api/cleaner/available-orders'
+      path: '/api/cleaner/available-orders'
+      fullPath: '/api/cleaner/available-orders'
+      preLoaderRoute: typeof ApiCleanerAvailableOrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/orders/$id/confirm-payment': {
       id: '/api/admin/orders/$id/confirm-payment'
       path: '/api/admin/orders/$id/confirm-payment'
       fullPath: '/api/admin/orders/$id/confirm-payment'
       preLoaderRoute: typeof ApiAdminOrdersIdConfirmPaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cleaner/orders/$id/claim': {
+      id: '/api/cleaner/orders/$id/claim'
+      path: '/api/cleaner/orders/$id/claim'
+      fullPath: '/api/cleaner/orders/$id/claim'
+      preLoaderRoute: typeof ApiCleanerOrdersIdClaimRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -456,7 +497,9 @@ const rootRouteChildren: RootRouteChildren = {
   TheoDoiDonRoute: TheoDoiDonRoute,
   TinNhanRoute: TinNhanRoute,
   DonIdRoute: DonIdRoute,
+  ApiCleanerAvailableOrdersRoute: ApiCleanerAvailableOrdersRoute,
   ApiAdminOrdersIdConfirmPaymentRoute: ApiAdminOrdersIdConfirmPaymentRoute,
+  ApiCleanerOrdersIdClaimRoute: ApiCleanerOrdersIdClaimRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

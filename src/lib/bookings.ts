@@ -1,19 +1,26 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import type { BookingStatus, PaymentStatus } from "@/lib/cleanlink-data";
+import {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  type BookingStatus,
+  type PaymentStatus,
+} from "@/lib/cleanlink-data";
 
 export type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
 
-/** Các bước trạng thái hiển thị cho chủ cơ sở và người dọn */
+export const PAYMENT_PENDING_TAG = "__payment_pending__";
+
+/** Các bước trạng thái hiển thị cho chủ cơ sở, quản trị viên và người dọn */
 export const flowSteps: { key: BookingStatus; label: string }[] = [
-  { key: "pending", label: "Chờ xác nhận chuyển khoản" },
-  { key: "searching", label: "Đang tìm người dọn" },
-  { key: "accepted", label: "Người dọn đã nhận việc" },
-  { key: "in_progress", label: "Đang thực hiện" },
-  { key: "photo_sent", label: "Đã gửi ảnh sau khi dọn" },
+  { key: "pending", label: "Chờ Admin duyệt tiền chuyển khoản" },
+  { key: "searching", label: "Đã duyệt tiền – Đang chờ người dọn nhận đơn" },
+  { key: "accepted", label: "Người dọn đã nhận đơn" },
+  { key: "in_progress", label: "Đang thực hiện dọn phòng" },
+  { key: "photo_sent", label: "Đã gửi ảnh xác nhận sau khi dọn" },
   { key: "completed", label: "Chủ cơ sở đã xác nhận hoàn thành" },
-  { key: "reviewed", label: "Đã đánh giá" },
+  { key: "reviewed", label: "Đã đánh giá dịch vụ" },
 ];
 
 export function stepIndex(status: string) {
@@ -45,6 +52,9 @@ type LocalPaymentMeta = {
   confirmed_by?: string | null;
 };
 
+// Bộ nhớ đệm biên nhận thanh toán (đồng bộ từ cả localStorage và Supabase Storage)
+let memoryConfirmedIds = new Set<string>();
+
 function readConfirmedMap(): Record<string, LocalPaymentMeta> {
   if (typeof window === "undefined") return {};
   try {
@@ -56,6 +66,7 @@ function readConfirmedMap(): Record<string, LocalPaymentMeta> {
 }
 
 function recordLocalPaymentConfirmation(bookingId: string, meta: LocalPaymentMeta) {
+  memoryConfirmedIds.add(bookingId);
   if (typeof window === "undefined") return;
   try {
     const map = readConfirmedMap();
@@ -66,32 +77,108 @@ function recordLocalPaymentConfirmation(bookingId: string, meta: LocalPaymentMet
   }
 }
 
-/** Xác định trạng thái thanh toán của đơn (tương thích cả trước và sau khi chạy migration 0006) */
-export function getPaymentStatus(
-  b: Pick<BookingRow, "status"> & { payment_status?: string | null; id?: string },
-): PaymentStatus {
-  if (b.id && readConfirmedMap()[b.id]) return "paid";
-  if (b.payment_status === "paid") return "paid";
-  if (b.payment_status === "pending") return "pending";
-  return b.status === "pending" ? "pending" : "paid";
+/**
+ * Đồng bộ danh sách biên nhận xác nhận thanh toán từ bucket `booking-photos/payments`
+ * để mọi tài khoản (Host, Admin, Cleaner) trên các trình duyệt khác nhau đều nhận biết ngay
+ * đơn nào đã được Admin duyệt tiền.
+ */
+export async function syncPaymentReceipts(): Promise<Set<string>> {
+  try {
+    const { data: files } = await supabase.storage
+      .from("booking-photos")
+      .list("payments", { limit: 1000 });
+    if (files && files.length > 0) {
+      const next = new Set<string>(memoryConfirmedIds);
+      for (const f of files) {
+        const id = f.name.replace(/\.json$/i, "");
+        if (id && id.length >= 32) {
+          next.add(id);
+          if (!readConfirmedMap()[id]) {
+            recordLocalPaymentConfirmation(id, {
+              paid_at: f.created_at ?? new Date().toISOString(),
+            });
+          }
+        }
+      }
+      memoryConfirmedIds = next;
+    }
+  } catch {
+    // ignore storage list errors
+  }
+  return memoryConfirmedIds;
 }
 
-export function applyLocalPaymentConfirmation(row: BookingRow | null): BookingRow | null {
+function isConfirmedInCache(bookingId?: string): boolean {
+  if (!bookingId) return false;
+  return memoryConfirmedIds.has(bookingId) || Boolean(readConfirmedMap()[bookingId]);
+}
+
+/** Xác định trạng thái thanh toán của đơn (tương thích cả trước và sau khi chạy migration 0006) */
+export function getPaymentStatus(
+  b: Pick<BookingRow, "status"> & {
+    payment_status?: string | null;
+    checklist_done?: string[] | null;
+    cleaner_id?: string | null;
+    id?: string;
+  },
+): PaymentStatus {
+  if (isConfirmedInCache(b.id)) return PAYMENT_STATUS.PAID;
+  if (b.payment_status === PAYMENT_STATUS.PAID) return PAYMENT_STATUS.PAID;
+  if (b.cleaner_id) return PAYMENT_STATUS.PAID;
+  if (
+    ["accepted", "on_the_way", "in_progress", "work_done", "photo_sent", "completed", "reviewed"].includes(
+      b.status,
+    )
+  ) {
+    return PAYMENT_STATUS.PAID;
+  }
+  if (b.payment_status === PAYMENT_STATUS.PENDING) return PAYMENT_STATUS.PENDING;
+  if ((b.checklist_done ?? []).includes(PAYMENT_PENDING_TAG)) return PAYMENT_STATUS.PENDING;
+  return b.status === ORDER_STATUS.PENDING_CONFIRMATION
+    ? PAYMENT_STATUS.PENDING
+    : PAYMENT_STATUS.PAID;
+}
+
+/**
+ * Chuẩn hoá bản ghi đơn hàng:
+ * - Tách bỏ thẻ nội bộ `__payment_pending__` khỏi `checklist_done`
+ * - Đồng bộ `payment_status` và `status` theo đúng bước nghiệp vụ:
+ *   + Chưa duyệt tiền → status = "pending" (PENDING_CONFIRMATION), payment_status = "pending"
+ *   + Đã duyệt tiền & chưa có thợ nhận → status = "searching" (READY_FOR_PICKUP), payment_status = "paid"
+ */
+export function normalizeBookingRow(row: BookingRow | null): BookingRow | null {
   if (!row) return null;
   const local = readConfirmedMap()[row.id];
   const paymentStatus = getPaymentStatus(row);
+  const cleanChecklist = (row.checklist_done ?? []).filter((x) => x !== PAYMENT_PENDING_TAG);
+
+  let effectiveStatus = row.status;
+  if (paymentStatus === PAYMENT_STATUS.PENDING && !row.cleaner_id && row.status !== "cancelled") {
+    effectiveStatus = ORDER_STATUS.PENDING_CONFIRMATION;
+  } else if (
+    paymentStatus === PAYMENT_STATUS.PAID &&
+    row.status === ORDER_STATUS.PENDING_CONFIRMATION
+  ) {
+    effectiveStatus = ORDER_STATUS.READY_FOR_PICKUP;
+  }
+
   return {
     ...row,
+    checklist_done: cleanChecklist,
     payment_status: paymentStatus,
     paid_at: row.paid_at ?? local?.paid_at ?? null,
     payment_confirmed_by: row.payment_confirmed_by ?? local?.confirmed_by ?? null,
-    status: paymentStatus === "paid" && row.status === "pending" ? "searching" : row.status,
+    status: effectiveStatus,
   };
 }
 
-export function applyLocalPaymentConfirmations(rows: BookingRow[]): BookingRow[] {
-  return rows.map((r) => applyLocalPaymentConfirmation(r)!);
+export function normalizeBookingRows(rows: BookingRow[]): BookingRow[] {
+  return rows.map((r) => normalizeBookingRow(r)!);
 }
+
+// Giữ alias tương thích ngược
+export const applyLocalPaymentConfirmation = normalizeBookingRow;
+export const applyLocalPaymentConfirmations = normalizeBookingRows;
 
 /** Trích xuất thông báo lỗi từ cả Error lẫn PostgrestError của Supabase */
 export function getErrorMessage(err: unknown, fallback = "Có lỗi xảy ra, vui lòng thử lại"): string {
@@ -139,9 +226,11 @@ export function buildTransferContent(phone: string, code: string) {
 }
 
 /**
- * Lưu đơn đặt dọn phòng khi khách bấm "Tôi đã chuyển khoản" ở trang /thanh-toan.
- * - Đặt status = "pending" (CHO_XAC_NHAN) và payment_status = "pending" (PAYMENT_PENDING).
- * - Tự động fallback về các cột gốc nếu DB từ xa chưa chạy migration 0005/0006 để không bao giờ lỗi PGRST204.
+ * Lưu đơn đặt dọn phòng khi khách bấm "Tôi đã chuyển khoản" ở trang /thanh-toan:
+ * - Nếu DB đã có cột `payment_status` (migration 0006): lưu `status = "pending"`, `payment_status = "pending"`.
+ * - Nếu DB từ xa chưa chạy migration 0006: lưu `status = "searching"` kèm `checklist_done = ["__payment_pending__"]`
+ *   để RLS của Người dọn (0002) cho phép truy vấn/nhận việc ngay sau khi Admin duyệt tiền, trong khi
+ *   trước lúc duyệt tiền đơn vẫn hiển thị là "Chờ duyệt tiền" và hoàn toàn ẩn khỏi màn hình Người dọn.
  */
 export async function createBookingFromDraft(
   draft: BookingDraft,
@@ -166,13 +255,13 @@ export async function createBookingFromDraft(
       addons: draft.addons ?? [],
       note: draft.note ?? null,
       price: draft.price ?? 0,
-      status: "pending",
     };
 
     const fullPayload = {
       ...basePayload,
+      status: ORDER_STATUS.PENDING_CONFIRMATION,
       payment_method: PAYMENT_METHOD,
-      payment_status: "pending",
+      payment_status: PAYMENT_STATUS.PENDING,
     };
 
     const { data, error } = await supabase
@@ -191,10 +280,14 @@ export async function createBookingFromDraft(
     }
 
     if (isMissingColumnError(error)) {
-      // Fallback sang các cột gốc (0002_create_bookings_flow.sql)
+      // Fallback tương thích RLS 0002: lưu status = "searching" + cờ "__payment_pending__" trong checklist_done
       const { data: fallbackData, error: fallbackError } = await supabase
         .from("bookings")
-        .insert(basePayload)
+        .insert({
+          ...basePayload,
+          status: ORDER_STATUS.READY_FOR_PICKUP,
+          checklist_done: [PAYMENT_PENDING_TAG],
+        })
         .select("id, code")
         .single();
 
@@ -218,14 +311,31 @@ export async function createBookingFromDraft(
 
 /**
  * Admin xác nhận đã nhận tiền chuyển khoản cho đơn:
- * - Gọi API PATCH /api/admin/orders/:id/confirm-payment (kiểm tra quyền ADMIN ở server).
- * - Cập nhật payment_status = "paid", paid_at = now, status = "searching" (Đang tìm người dọn).
+ * - Gọi API PATCH /api/admin/orders/:id/confirm-payment (kiểm tra quyền ADMIN).
+ * - Cập nhật payment_status = "paid", paid_at = now, status = "searching" (READY_FOR_PICKUP).
+ * - Lưu biên nhận vào bucket `booking-photos/payments/${id}.json` để màn hình Người dọn nhận đơn ngay lập tức.
  */
 export async function confirmBookingPayment(bookingId: string): Promise<BookingRow> {
   const now = new Date().toISOString();
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
   const adminUserId = sessionData.session?.user?.id ?? null;
+
+  // Ghi biên nhận vào Supabase Storage (mọi user authenticated đều đọc/ghi được theo policy 0003)
+  const uploadReceipt = async () => {
+    try {
+      const blob = new Blob(
+        [JSON.stringify({ booking_id: bookingId, paid_at: now, confirmed_by: adminUserId })],
+        { type: "application/json" },
+      );
+      await supabase.storage.from("booking-photos").upload(`payments/${bookingId}.json`, blob, {
+        upsert: true,
+        contentType: "application/json",
+      });
+    } catch {
+      // ignore storage error
+    }
+  };
 
   try {
     const res = await fetch(`/api/admin/orders/${bookingId}/confirm-payment`, {
@@ -246,31 +356,34 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
         paid_at: body.order.paid_at ?? now,
         confirmed_by: body.order.payment_confirmed_by ?? adminUserId,
       });
-      return applyLocalPaymentConfirmation(body.order)!;
+      await uploadReceipt();
+      return normalizeBookingRow(body.order)!;
     }
 
     if (res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
       throw new Error(body?.error || "Không thể xác nhận thanh toán cho đơn này");
     }
   } catch (err) {
-    // Nếu lỗi nghiệp vụ (401/403/404/409) thì ném ra ngay
     if (
       err instanceof Error &&
       /đăng nhập|quản trị|Không tìm thấy|trước đó|không hợp lệ/i.test(err.message)
     ) {
       throw err;
     }
-    // Ngược lại (ví dụ server dev chạy trong môi trường không có mạng ra Supabase), fallback qua client
   }
 
   // Fallback trực tiếp qua Supabase client của Admin
+  await uploadReceipt();
+  recordLocalPaymentConfirmation(bookingId, { paid_at: now, confirmed_by: adminUserId });
+
   const { data: fullUpdate, error: fullError } = await supabase
     .from("bookings")
     .update({
-      payment_status: "paid",
+      payment_status: PAYMENT_STATUS.PAID,
       paid_at: now,
       payment_confirmed_by: adminUserId,
-      status: "searching",
+      status: ORDER_STATUS.READY_FOR_PICKUP,
+      checklist_done: [],
       updated_at: now,
     })
     .eq("id", bookingId)
@@ -278,8 +391,7 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
     .maybeSingle();
 
   if (!fullError && fullUpdate) {
-    recordLocalPaymentConfirmation(bookingId, { paid_at: now, confirmed_by: adminUserId });
-    return applyLocalPaymentConfirmation(fullUpdate as BookingRow)!;
+    return normalizeBookingRow(fullUpdate as BookingRow)!;
   }
 
   if (fullError && !isMissingColumnError(fullError)) {
@@ -289,7 +401,8 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
   const { data: baseUpdate, error: baseError } = await supabase
     .from("bookings")
     .update({
-      status: "searching",
+      status: ORDER_STATUS.READY_FOR_PICKUP,
+      checklist_done: [],
       updated_at: now,
     })
     .eq("id", bookingId)
@@ -300,61 +413,197 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
     throw new Error(getErrorMessage(baseError, "Không xác nhận được thanh toán, vui lòng thử lại"));
   }
 
-  recordLocalPaymentConfirmation(bookingId, { paid_at: now, confirmed_by: adminUserId });
-
   const existing = baseUpdate ?? (await fetchBooking(bookingId));
   if (!existing) {
     throw new Error("Không tìm thấy đơn để xác nhận thanh toán");
   }
 
-  return applyLocalPaymentConfirmation({
+  return normalizeBookingRow({
     ...(existing as BookingRow),
-    status: "searching",
-    payment_status: "paid",
+    checklist_done: [],
+    status: ORDER_STATUS.READY_FOR_PICKUP,
+    payment_status: PAYMENT_STATUS.PAID,
     paid_at: now,
     payment_confirmed_by: adminUserId,
   })!;
 }
 
+/**
+ * Tự động nâng cấp các đơn cũ đang ở `status = "pending"` (nếu DB chưa chạy migration 0006)
+ * sang `status = "searching"` để sau khi Admin duyệt tiền, Người dọn có thể nhìn thấy và nhận đơn qua RLS 0002.
+ */
+export async function ensureRlsCompatiblePendingRows(rows: BookingRow[], currentUserId?: string) {
+  for (const r of rows) {
+    const rawPayStatus = (r as { payment_status?: string | null }).payment_status;
+    if (
+      r.status === ORDER_STATUS.PENDING_CONFIRMATION &&
+      rawPayStatus === undefined &&
+      (!currentUserId || r.host_id === currentUserId)
+    ) {
+      const nextChecklist = isConfirmedInCache(r.id)
+        ? (r.checklist_done ?? []).filter((x) => x !== PAYMENT_PENDING_TAG)
+        : Array.from(new Set([...(r.checklist_done ?? []), PAYMENT_PENDING_TAG]));
+      await supabase
+        .from("bookings")
+        .update({
+          status: ORDER_STATUS.READY_FOR_PICKUP,
+          checklist_done: nextChecklist,
+        })
+        .eq("id", r.id);
+    }
+  }
+}
+
 export async function fetchBooking(id: string) {
+  await syncPaymentReceipts();
   const { data, error } = await supabase.from("bookings").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
-  return applyLocalPaymentConfirmation(data as BookingRow | null);
+  if (data) {
+    await ensureRlsCompatiblePendingRows([data as BookingRow]);
+  }
+  return normalizeBookingRow(data as BookingRow | null);
 }
 
 export async function fetchHostBookings(hostId: string) {
+  await syncPaymentReceipts();
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .eq("host_id", hostId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return applyLocalPaymentConfirmations((data ?? []) as BookingRow[]);
+  const rawRows = (data ?? []) as BookingRow[];
+  await ensureRlsCompatiblePendingRows(rawRows, hostId);
+  return normalizeBookingRows(rawRows);
 }
 
-/** Người dọn: công việc đang mở + công việc của chính mình */
+/**
+ * Lấy danh sách đơn cho màn hình Người dọn:
+ * - Gồm các đơn đã được Admin duyệt tiền & đang chờ người dọn (status = "searching", payment_status = "paid", cleaner_id = null)
+ * - Và các đơn do chính người dọn hiện tại đã nhận (cleaner_id = user.id)
+ */
 export async function fetchCleanerBookings() {
+  await syncPaymentReceipts();
   const { data, error } = await supabase
     .from("bookings")
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return applyLocalPaymentConfirmations((data ?? []) as BookingRow[]);
+  return normalizeBookingRows((data ?? []) as BookingRow[]);
 }
 
-export async function acceptJob(bookingId: string, cleanerId: string, cleanerName: string) {
-  const { error } = await supabase
+/**
+ * Gọi API `GET /api/cleaner/available-orders` (kèm fallback qua Supabase client)
+ * để lấy danh sách đơn mới chờ nhận việc, có hỗ trợ lọc theo khu vực (`area`).
+ */
+export async function fetchAvailableOrders(area?: string): Promise<BookingRow[]> {
+  await syncPaymentReceipts();
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  if (token) {
+    try {
+      const qs = area && area !== "all" ? `?area=${encodeURIComponent(area)}` : "";
+      const res = await fetch(`/api/cleaner/available-orders${qs}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const body = (await res.json()) as { orders?: BookingRow[] };
+        if (Array.isArray(body.orders)) {
+          return normalizeBookingRows(body.orders).filter(
+            (b) =>
+              !b.cleaner_id &&
+              b.status === ORDER_STATUS.READY_FOR_PICKUP &&
+              getPaymentStatus(b) === PAYMENT_STATUS.PAID,
+          );
+        }
+      }
+    } catch {
+      // Fallback sang truy vấn trực tiếp bên dưới
+    }
+  }
+
+  const all = await fetchCleanerBookings();
+  return all.filter(
+    (b) =>
+      !b.cleaner_id &&
+      b.status === ORDER_STATUS.READY_FOR_PICKUP &&
+      getPaymentStatus(b) === PAYMENT_STATUS.PAID &&
+      (!area || area === "all" || b.area === area),
+  );
+}
+
+/**
+ * Người dọn bấm "Nhận đơn":
+ * - Gọi `POST /api/cleaner/orders/:id/claim` (kiểm tra race condition)
+ * - Cập nhật `cleaner_id = cleanerId`, `cleaner_name = cleanerName`, `status = "in_progress"`
+ * - Tránh 2 thợ cùng nhận 1 đơn bằng điều kiện `.is("cleaner_id", null).eq("status", "searching")`.
+ */
+export async function acceptJob(
+  bookingId: string,
+  cleanerId: string,
+  cleanerName: string,
+): Promise<BookingRow> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  if (token) {
+    try {
+      const res = await fetch(`/api/cleaner/orders/${bookingId}/claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ cleanerName }),
+      });
+      const body = (await res.json().catch(() => null)) as {
+        order?: BookingRow;
+        error?: string;
+      } | null;
+
+      if (res.ok && body?.order) {
+        return normalizeBookingRow(body.order)!;
+      }
+      if (res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
+        throw new Error(body?.error || "Không thể nhận đơn này");
+      }
+    } catch (err) {
+      if (
+        err instanceof Error &&
+        /người dọn khác|không còn|đăng nhập|Không tìm thấy/i.test(err.message)
+      ) {
+        throw err;
+      }
+    }
+  }
+
+  // Fallback atomic update trực tiếp qua Supabase
+  const now = new Date().toISOString();
+  const { data: claimed, error } = await supabase
     .from("bookings")
     .update({
       cleaner_id: cleanerId,
       cleaner_name: cleanerName,
-      status: "accepted",
-      accepted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      status: ORDER_STATUS.IN_PROGRESS,
+      checklist_done: [],
+      accepted_at: now,
+      updated_at: now,
     })
     .eq("id", bookingId)
-    .is("cleaner_id", null);
-  if (error) throw error;
+    .is("cleaner_id", null)
+    .eq("status", ORDER_STATUS.READY_FOR_PICKUP)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(getErrorMessage(error, "Không nhận được đơn này, vui lòng thử lại"));
+  }
+  if (!claimed) {
+    throw new Error("Đơn này vừa được người dọn khác nhận hoặc không còn khả dụng");
+  }
+
+  return normalizeBookingRow(claimed as BookingRow)!;
 }
 
 export async function updateBooking(bookingId: string, patch: Partial<BookingInsert>) {

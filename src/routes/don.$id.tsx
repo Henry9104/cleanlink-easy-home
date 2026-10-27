@@ -31,8 +31,9 @@ import {
   paymentStatusColor,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
-import { addonLabels, serviceSummary } from "@/lib/pricing";
+import { addonLabels, cleanerPayoutFromBooking, serviceSummary } from "@/lib/pricing";
 import {
+  acceptJob,
   confirmBookingPayment,
   fetchBooking,
   flowSteps,
@@ -125,6 +126,7 @@ function BookingDetailPage() {
   const isCleaner = role === "cleaner";
   const status = booking.status as BookingStatus;
   const payStatus = getPaymentStatus(booking);
+  const payout = cleanerPayoutFromBooking(booking);
   const done = booking.checklist_done ?? [];
   const allDone = done.length === checklistItems.length;
   const current = stepIndex(status);
@@ -150,7 +152,7 @@ function BookingDetailPage() {
       setBooking(updated);
       setConfirmOpen(false);
       toast.success(
-        `Đã xác nhận thanh toán đơn ${target.code} – đơn chuyển sang đang tìm người dọn`,
+        `Đã xác nhận thanh toán đơn ${target.code} – đơn đã chuyển sang chờ người dọn nhận việc`,
       );
       await reload();
     } catch (e) {
@@ -249,11 +251,11 @@ function BookingDetailPage() {
                 <CreditCard className="h-4 w-4" />
               </div>
               <div>
-                <p className="font-semibold text-amber-950">Đơn đang chờ xác nhận tiền chuyển khoản</p>
+                <p className="font-semibold text-amber-950">Đơn đang chờ duyệt tiền chuyển khoản</p>
                 <p className="text-xs text-amber-800 mt-0.5">
                   Số tiền cần đối soát VietQR:{" "}
                   <span className="font-bold">{formatVND(booking.price)}</span> · Sau khi xác nhận, đơn sẽ
-                  chuyển sang tìm người dọn.
+                  chuyển sang màn hình Người dọn.
                 </p>
               </div>
             </div>
@@ -268,7 +270,7 @@ function BookingDetailPage() {
                   Đang xác nhận…
                 </>
               ) : (
-                "Xác nhận thanh toán"
+                "Xác nhận đã thanh toán"
               )}
             </Button>
           </div>
@@ -291,7 +293,15 @@ function BookingDetailPage() {
               label="Dịch vụ"
               value={serviceSummary(booking.room_type, booking.rooms)}
             />
-            <Info icon={<Wallet className="h-3 w-3" />} label="Tổng đơn" value={formatVND(booking.price)} />
+            <Info
+              icon={<Wallet className="h-3 w-3" />}
+              label={isCleaner ? "Tiền công thợ nhận" : "Tổng đơn"}
+              value={
+                isCleaner
+                  ? `${formatVND(payout.cleanerTotal)} (Tổng đơn: ${formatVND(booking.price)})`
+                  : formatVND(booking.price)
+              }
+            />
           </div>
           {(booking.addons ?? []).length > 0 && (
             <p className="mt-4 text-sm">
@@ -308,7 +318,7 @@ function BookingDetailPage() {
           <p className="mt-3 text-sm text-muted-foreground">
             Người dọn:{" "}
             <span className="font-medium text-foreground">
-              {booking.cleaner_name || "Đang tìm người dọn"}
+              {booking.cleaner_name || "Đang chờ người dọn nhận đơn"}
             </span>
             {" · "}Liên hệ: {booking.phone}
           </p>
@@ -316,7 +326,7 @@ function BookingDetailPage() {
 
         {/* Trạng thái */}
         <div className="mt-6 rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
-          <h2 className="font-semibold">Trạng thái đơn</h2>
+          <h2 className="font-semibold">Tiến độ đơn</h2>
           <ol className="mt-4 space-y-3">
             {flowSteps.map((s, i) => (
               <li key={s.key} className="flex items-start gap-3">
@@ -337,30 +347,37 @@ function BookingDetailPage() {
           </ol>
         </div>
 
-        {/* Người dọn nhận việc */}
-        {isCleaner && !booking.cleaner_id && status === "searching" && (
+        {/* Người dọn nhận đơn */}
+        {isCleaner && !booking.cleaner_id && status === "searching" && payStatus === "paid" && (
           <div className="mt-6 rounded-2xl bg-mint/40 border border-mint p-5 flex items-center justify-between flex-wrap gap-3">
-            <p className="font-semibold">Bạn muốn nhận công việc này?</p>
+            <div>
+              <p className="font-semibold">Đơn đã được Admin duyệt thanh toán – Sẵn sàng nhận việc!</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Tiền công thợ nhận:{" "}
+                <strong className="text-emerald-700">{formatVND(payout.cleanerTotal)}</strong>
+              </p>
+            </div>
             <Button
               className="rounded-full"
               disabled={busy}
               onClick={() =>
                 run(async () => {
-                  const { error } = await supabase
-                    .from("bookings")
-                    .update({
-                      cleaner_id: user!.id,
-                      cleaner_name: profile?.full_name || "Người dọn CleanLink",
-                      status: "accepted",
-                      accepted_at: new Date().toISOString(),
-                    })
-                    .eq("id", booking.id)
-                    .is("cleaner_id", null);
-                  if (error) throw error;
-                }, "Bạn đã nhận công việc này")
+                  await acceptJob(
+                    booking.id,
+                    user!.id,
+                    profile?.full_name || "Người dọn CleanLink",
+                  );
+                }, `Đã nhận đơn ${booking.code} thành công`)
               }
             >
-              Nhận việc
+              {busy ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Đang nhận đơn…
+                </>
+              ) : (
+                "Nhận đơn"
+              )}
             </Button>
           </div>
         )}

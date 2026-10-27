@@ -85,7 +85,6 @@ export const propertyTypes = [
 
 export type RoomTypeKey = "standard" | "large" | "family" | "kitchen" | "special";
 
-
 export const areas = [
   { value: "trung_tam", label: "Trung tâm Quy Nhơn" },
   { value: "nhon_ly", label: "Nhơn Lý" },
@@ -127,6 +126,27 @@ export type BookingStatus =
   | "reviewed"
   | "cancelled";
 
+/**
+ * Hằng số ánh xạ các bước trạng thái đơn chuẩn theo luồng nghiệp vụ:
+ * - PENDING_CONFIRMATION ("pending"): Chờ Admin duyệt tiền
+ * - READY_FOR_PICKUP ("searching"): Đã duyệt tiền, đang chờ thợ nhận
+ * - ACCEPTED ("accepted"): Thợ đã nhận đơn
+ * - IN_PROGRESS ("in_progress"): Thợ đang thực hiện
+ * - CONFIRMATION_SUBMITTED ("photo_sent"): Đã gửi ảnh xác nhận
+ * - COMPLETED ("completed"): Hoàn thành dịch vụ
+ * - REVIEWED ("reviewed"): Đã đánh giá
+ */
+export const ORDER_STATUS = {
+  PENDING_CONFIRMATION: "pending",
+  READY_FOR_PICKUP: "searching",
+  ACCEPTED: "accepted",
+  IN_PROGRESS: "in_progress",
+  CONFIRMATION_SUBMITTED: "photo_sent",
+  COMPLETED: "completed",
+  REVIEWED: "reviewed",
+  CANCELLED: "cancelled",
+} as const satisfies Record<string, BookingStatus>;
+
 export type Booking = {
   id: string;
   createdAt: string;
@@ -147,10 +167,10 @@ export type Booking = {
 };
 
 export const statusLabel: Record<BookingStatus, string> = {
-  pending: "Chờ xác nhận",
+  pending: "Chờ duyệt tiền",
   created: "Đã tạo đơn",
-  searching: "Đang tìm người dọn",
-  accepted: "Người dọn đã nhận việc",
+  searching: "Đang chờ người dọn",
+  accepted: "Thợ đã nhận đơn",
   on_the_way: "Người dọn đang đến cơ sở",
   in_progress: "Đang thực hiện",
   work_done: "Đã hoàn thành các công việc",
@@ -177,8 +197,13 @@ export const statusColor: Record<BookingStatus, string> = {
 // ===== Trạng thái thanh toán =====
 export type PaymentStatus = "pending" | "paid";
 
+export const PAYMENT_STATUS = {
+  PENDING: "pending",
+  PAID: "paid",
+} as const satisfies Record<string, PaymentStatus>;
+
 export const paymentStatusLabel: Record<PaymentStatus, string> = {
-  pending: "Chờ xác nhận tiền",
+  pending: "Chờ duyệt tiền",
   paid: "Đã thanh toán",
 };
 
