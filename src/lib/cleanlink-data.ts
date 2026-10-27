@@ -174,6 +174,19 @@ export const statusColor: Record<BookingStatus, string> = {
   cancelled: "bg-rose-100 text-rose-800 border-rose-200",
 };
 
+// ===== Trạng thái thanh toán =====
+export type PaymentStatus = "pending" | "paid";
+
+export const paymentStatusLabel: Record<PaymentStatus, string> = {
+  pending: "Chờ xác nhận tiền",
+  paid: "Đã thanh toán",
+};
+
+export const paymentStatusColor: Record<PaymentStatus, string> = {
+  pending: "bg-amber-100 text-amber-800 border-amber-300",
+  paid: "bg-emerald-100 text-emerald-800 border-emerald-300",
+};
+
 // ===== Pricing =====
 // Mỗi mức giá gồm: Khách trả = Người dọn nhận + CleanLink thu (phí nền tảng).
 // `null` nghĩa là báo giá riêng / theo thỏa thuận.

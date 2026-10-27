@@ -4,7 +4,7 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { MapPin, Clock, Wallet, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { fetchHostBookings, type BookingRow } from "@/lib/bookings";
+import { fetchHostBookings, getPaymentStatus, type BookingRow } from "@/lib/bookings";
 import {
   areas,
   timeSlots,
@@ -12,6 +12,8 @@ import {
   formatVND,
   statusLabel,
   statusColor,
+  paymentStatusLabel,
+  paymentStatusColor,
   type BookingStatus,
 } from "@/lib/cleanlink-data";
 import { serviceHeadline } from "@/lib/pricing";
@@ -79,6 +81,7 @@ function TrackingPage() {
         ) : (
           rows.map((b) => {
             const status = b.status as BookingStatus;
+            const payStatus = getPaymentStatus(b);
             return (
               <article key={b.id} className="rounded-2xl bg-card border border-border/60 shadow-card p-5 md:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -91,9 +94,14 @@ function TrackingPage() {
                       <MapPin className="h-3.5 w-3.5" /> {b.address} · {labelFrom(areas, b.area)}
                     </p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusColor[status]}`}>
-                    {statusLabel[status]}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${paymentStatusColor[payStatus]}`}>
+                      {paymentStatusLabel[payStatus]}
+                    </span>
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${statusColor[status]}`}>
+                      {statusLabel[status]}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">

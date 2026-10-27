@@ -29,7 +29,10 @@ export type Database = {
           host_id: string
           id: string
           note: string | null
+          paid_at: string | null
+          payment_confirmed_by: string | null
           payment_method: string
+          payment_status: string
           phone: string
           photo_after: string | null
           photo_before: string | null
@@ -59,7 +62,10 @@ export type Database = {
           host_id: string
           id?: string
           note?: string | null
+          paid_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string
+          payment_status?: string
           phone: string
           photo_after?: string | null
           photo_before?: string | null
@@ -89,7 +95,10 @@ export type Database = {
           host_id?: string
           id?: string
           note?: string | null
+          paid_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string
+          payment_status?: string
           phone?: string
           photo_after?: string | null
           photo_before?: string | null

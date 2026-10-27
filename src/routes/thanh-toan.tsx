@@ -5,11 +5,11 @@ import { toast } from "sonner";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  PAYMENT_METHOD,
   buildTransferContent,
   clearBookingDraft,
+  createBookingFromDraft,
+  getErrorMessage,
   loadBookingDraft,
   type BookingDraft,
 } from "@/lib/bookings";
@@ -110,22 +110,12 @@ function PaymentPage() {
     }
     setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from("bookings")
-        .insert({
-          ...pending,
-          host_id: user.id,
-          status: "pending",
-          payment_method: PAYMENT_METHOD,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
+      const data = await createBookingFromDraft(pending, user.id);
       clearBookingDraft();
       toast.success("Đã gửi đơn – CleanLink sẽ xác nhận sau khi nhận được chuyển khoản");
       void navigate({ to: "/don/$id", params: { id: data.id } });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Không gửi được đơn, vui lòng thử lại");
+      toast.error(getErrorMessage(err, "Không gửi được đơn, vui lòng thử lại"));
     } finally {
       setSaving(false);
     }

@@ -28,6 +28,7 @@ import { Route as ThanhToanRouteImport } from './routes/thanh-toan'
 import { Route as TheoDoiDonRouteImport } from './routes/theo-doi-don'
 import { Route as TinNhanRouteImport } from './routes/tin-nhan'
 import { Route as DonIdRouteImport } from './routes/don.$id'
+import { Route as ApiAdminOrdersIdConfirmPaymentRouteImport } from './routes/api.admin.orders.$id.confirm-payment'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +125,12 @@ const DonIdRoute = DonIdRouteImport.update({
   path: '/don/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminOrdersIdConfirmPaymentRoute =
+  ApiAdminOrdersIdConfirmPaymentRouteImport.update({
+    id: '/api/admin/orders/$id/confirm-payment',
+    path: '/api/admin/orders/$id/confirm-payment',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,6 +174,7 @@ export interface FileRoutesByTo {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +197,7 @@ export interface FileRoutesById {
   '/theo-doi-don': typeof TheoDoiDonRoute
   '/tin-nhan': typeof TinNhanRoute
   '/don/$id': typeof DonIdRoute
+  '/api/admin/orders/$id/confirm-payment': typeof ApiAdminOrdersIdConfirmPaymentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +221,7 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/admin/orders/$id/confirm-payment'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/admin/orders/$id/confirm-payment'
   id:
     | '__root__'
     | '/'
@@ -253,6 +265,7 @@ export interface FileRouteTypes {
     | '/theo-doi-don'
     | '/tin-nhan'
     | '/don/$id'
+    | '/api/admin/orders/$id/confirm-payment'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +288,7 @@ export interface RootRouteChildren {
   TheoDoiDonRoute: typeof TheoDoiDonRoute
   TinNhanRoute: typeof TinNhanRoute
   DonIdRoute: typeof DonIdRoute
+  ApiAdminOrdersIdConfirmPaymentRoute: typeof ApiAdminOrdersIdConfirmPaymentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DonIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/orders/$id/confirm-payment': {
+      id: '/api/admin/orders/$id/confirm-payment'
+      path: '/api/admin/orders/$id/confirm-payment'
+      fullPath: '/api/admin/orders/$id/confirm-payment'
+      preLoaderRoute: typeof ApiAdminOrdersIdConfirmPaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +456,7 @@ const rootRouteChildren: RootRouteChildren = {
   TheoDoiDonRoute: TheoDoiDonRoute,
   TinNhanRoute: TinNhanRoute,
   DonIdRoute: DonIdRoute,
+  ApiAdminOrdersIdConfirmPaymentRoute: ApiAdminOrdersIdConfirmPaymentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
