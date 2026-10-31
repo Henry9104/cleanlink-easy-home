@@ -440,7 +440,7 @@ export function BookingFormModal({
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
               >
                 <option value="normal">Đặt lịch thông thường</option>
-                <option value="urgent">Đặt gấp (+20.000đ)</option>
+                <option value="urgent">Đặt gấp (+50.000đ)</option>
               </select>
             </div>
           </div>
@@ -547,11 +547,11 @@ export function BookingFormModal({
                 <p className="font-bold text-foreground">{formatVND(previewPayout.customerTotal)}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Phí nền tảng CleanLink:</span>
+                <span className="text-muted-foreground">Phí CleanLink thu (12%):</span>
                 <p className="font-bold text-primary">{formatVND(previewPayout.platformFee)}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Người dọn nhận:</span>
+                <span className="text-muted-foreground">Người dọn nhận (88%):</span>
                 <p className="font-bold text-emerald-700">{formatVND(previewPayout.cleanerTotal)}</p>
               </div>
             </div>
@@ -746,13 +746,13 @@ export function BookingDetailModal({
                 </p>
               </div>
               <div className="rounded-lg bg-white p-3 border border-border/60">
-                <p className="text-xs text-muted-foreground">Phí CleanLink thu</p>
+                <p className="text-xs text-muted-foreground">Phí CleanLink thu (12%)</p>
                 <p className="mt-0.5 text-base font-bold text-primary">
                   {formatVND(payout.platformFee)}
                 </p>
               </div>
               <div className="rounded-lg bg-white p-3 border border-emerald-200">
-                <p className="text-xs text-emerald-800">Người dọn nhận</p>
+                <p className="text-xs text-emerald-800">Người dọn nhận (88%)</p>
                 <p className="mt-0.5 text-base font-bold text-emerald-700">
                   {formatVND(payout.cleanerTotal)}
                 </p>

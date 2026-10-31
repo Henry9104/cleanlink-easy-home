@@ -212,9 +212,12 @@ export const paymentStatusColor: Record<PaymentStatus, string> = {
   paid: "bg-emerald-100 text-emerald-800 border-emerald-300",
 };
 
-// ===== Pricing =====
-// Mỗi mức giá gồm: Khách trả = Người dọn nhận + CleanLink thu (phí nền tảng).
-// `null` nghĩa là báo giá riêng / theo thỏa thuận.
+// ===== Pricing (Người dọn nhận 88% | CleanLink thu 12%) =====
+export const CLEANER_SHARE_RATE = 0.88;
+export const PLATFORM_FEE_RATE = 0.12;
+
+// Mỗi mức giá gồm: Khách trả = Người dọn nhận (88%) + CleanLink thu (12%).
+// `null` nghĩa là báo giá riêng / theo thỏa thuận (88% giá cuối cho người dọn | 12% giá cuối cho CleanLink).
 export type PriceSplit = {
   customer: number | null;
   cleaner: number | null;
@@ -224,12 +227,12 @@ export type PriceSplit = {
 // Tuỳ chọn có khóa định danh (dùng cho form ước tính / đặt lịch)
 export type PricedOption = PriceSplit & { value: string; label: string };
 
-// Bảng 1: Giá dọn phòng lưu trú
+// Bảng 1: Giá dọn phòng lưu trú (88% Người dọn | 12% CleanLink)
 export const ROOM_PRICING: Record<RoomTypeKey, PriceSplit & { label: string }> = {
-  standard: { label: "Phòng tiêu chuẩn dưới 25m²", customer: 60000, cleaner: 50000, platform: 10000 },
-  large: { label: "Phòng lớn 25–40m²", customer: 80000, cleaner: 65000, platform: 15000 },
-  family: { label: "Phòng gia đình 40–60m²", customer: 110000, cleaner: 90000, platform: 20000 },
-  kitchen: { label: "Phòng có bếp nhỏ", customer: 120000, cleaner: 100000, platform: 20000 },
+  standard: { label: "Phòng tiêu chuẩn dưới 25m²", customer: 60000, cleaner: 52800, platform: 7200 },
+  large: { label: "Phòng lớn 25–40m²", customer: 80000, cleaner: 70400, platform: 9600 },
+  family: { label: "Phòng gia đình 40–60m²", customer: 110000, cleaner: 96800, platform: 13200 },
+  kitchen: { label: "Phòng có bếp nhỏ", customer: 120000, cleaner: 105600, platform: 14400 },
   special: { label: "Phòng đặc biệt trên 60m²", customer: null, cleaner: null, platform: null },
 };
 
@@ -244,44 +247,53 @@ export const ROOM_PRICE: Record<RoomTypeKey, number> = {
   special: 0,
 };
 
-// Ví dụ minh họa cho Bảng 1
+// Ví dụ minh họa cho Bảng 1 (5 phòng tiêu chuẩn = 300.000đ)
 export const ROOM_EXAMPLE = {
   customerTotal: 300000,
-  cleanerTotal: 250000,
-  platformTotal: 50000,
-  note: "Mức phí 10.000đ/phòng chỉ phù hợp nếu CleanLink kiểm soát tốt chi phí vận hành và có nhiều phòng được dọn trong cùng một địa điểm.",
+  cleanerTotal: 264000,
+  platformTotal: 36000,
+  note: "Áp dụng tỷ lệ phân chia chuẩn: Người dọn nhận 88% giá trị đơn và CleanLink thu 12% phí vận hành nền tảng.",
 };
 
-// Bảng 2: Giá theo số lượng phòng (phòng tiêu chuẩn)
-export const ROOM_COUNT_PRICING: { rooms: number; price: number }[] = [1, 2, 3, 4, 5, 6, 7, 8].map(
-  (rooms) => ({ rooms, price: rooms * ROOM_PRICE.standard }),
-);
+// Bảng 2: Giá theo số lượng phòng tiêu chuẩn (1 đến 10 phòng)
+export const ROOM_COUNT_PRICING: {
+  rooms: number;
+  price: number;
+  customer: number;
+  cleaner: number;
+  platform: number;
+}[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rooms) => {
+  const price = rooms * ROOM_PRICE.standard;
+  const cleaner = Math.round(price * CLEANER_SHARE_RATE);
+  const platform = price - cleaner;
+  return { rooms, price, customer: price, cleaner, platform };
+});
 export const ROOM_COUNT_CONTRACT_THRESHOLD = 10;
 
-// Bảng 3: Hình thức A – Dọn dẹp nhà ở theo giờ
+// Bảng 3: Dọn nhà theo giờ (Người dọn 88% | CleanLink 12%)
 export const HOURLY_PRICING: PricedOption[] = [
-  { value: "2h", label: "2 giờ", customer: 140000, cleaner: 120000, platform: 20000 },
-  { value: "3h", label: "3 giờ", customer: 210000, cleaner: 180000, platform: 30000 },
-  { value: "4h", label: "4 giờ", customer: 280000, cleaner: 240000, platform: 40000 },
-  { value: "5h", label: "5 giờ", customer: 350000, cleaner: 300000, platform: 50000 },
-  { value: "6h", label: "6 giờ", customer: 420000, cleaner: 360000, platform: 60000 },
+  { value: "2h", label: "2 giờ", customer: 140000, cleaner: 123200, platform: 16800 },
+  { value: "3h", label: "3 giờ", customer: 210000, cleaner: 184800, platform: 25200 },
+  { value: "4h", label: "4 giờ", customer: 280000, cleaner: 246400, platform: 33600 },
+  { value: "5h", label: "5 giờ", customer: 350000, cleaner: 308000, platform: 42000 },
+  { value: "6h", label: "6 giờ", customer: 420000, cleaner: 369600, platform: 50400 },
 ];
 
-// Hình thức B – Dọn căn hộ theo diện tích
+// Bảng 4: Dọn căn hộ theo diện tích (Người dọn 88% | CleanLink 12%)
 export const AREA_PRICING: PricedOption[] = [
-  { value: "studio", label: "Studio (dưới 40m²)", customer: 140000, cleaner: 120000, platform: 20000 },
-  { value: "1br", label: "Căn hộ 1 phòng ngủ (40–60m²)", customer: 180000, cleaner: 155000, platform: 25000 },
-  { value: "2br", label: "Căn hộ 2 phòng ngủ (60–80m²)", customer: 240000, cleaner: 205000, platform: 35000 },
-  { value: "3br", label: "Căn hộ 3 phòng ngủ (80–110m²)", customer: 320000, cleaner: 275000, platform: 45000 },
-  { value: "townhouse", label: "Nhà phố nhỏ (80–120m²)", customer: 350000, cleaner: 300000, platform: 50000 },
+  { value: "studio", label: "Studio (Dưới 40m²)", customer: 140000, cleaner: 123200, platform: 16800 },
+  { value: "1br", label: "Căn hộ 1 phòng ngủ (40–60m²)", customer: 180000, cleaner: 158400, platform: 21600 },
+  { value: "2br", label: "Căn hộ 2 phòng ngủ (60–80m²)", customer: 240000, cleaner: 211200, platform: 28800 },
+  { value: "3br", label: "Căn hộ 3 phòng ngủ (80–110m²)", customer: 320000, cleaner: 281600, platform: 38400 },
+  { value: "townhouse", label: "Nhà phố nhỏ (80–120m²)", customer: 350000, cleaner: 308000, platform: 42000 },
   { value: "large", label: "Nhà lớn trên 120m²", customer: null, cleaner: null, platform: null },
 ];
 
-// Bảng giá phụ thu đề xuất
-export const URGENT_FEE = 20000;
+// Bảng giá phụ thu đề xuất (Đặt gấp trong vòng 2 giờ: +50.000đ/đơn)
+export const URGENT_FEE = 50000;
 export const SURCHARGES: { label: string; value: string }[] = [
-  { label: "Đặt lịch thông thường", value: "Miễn phí" },
-  { label: "Đặt gấp, cần bắt đầu trong 2 giờ", value: "+20.000đ/đơn" },
+  { label: "Đặt lịch thông thường", value: "Miễn phí (0đ)" },
+  { label: "Đặt gấp, yêu cầu bắt đầu trong vòng 2 giờ", value: "+50.000đ/đơn" },
   { label: "Dọn sau 20 giờ", value: "+20.000đ/đơn" },
   { label: "Dọn phòng bẩn nhiều", value: "Báo giá thêm trước khi thực hiện" },
   { label: "Vệ sinh tủ lạnh bên trong", value: "+30.000đ" },
@@ -298,8 +310,8 @@ export type ServiceType = "lodging" | "hourly" | "area";
 
 export const serviceTypes: readonly { value: ServiceType; label: string; hint: string }[] = [
   { value: "lodging", label: "Dọn phòng lưu trú", hint: "Homestay / Khách sạn" },
-  { value: "hourly", label: "Dọn dẹp nhà ở theo giờ", hint: "Hình thức A" },
-  { value: "area", label: "Dọn căn hộ theo diện tích", hint: "Hình thức B" },
+  { value: "hourly", label: "Dọn nhà theo giờ", hint: "Từ 2 giờ đến 6 giờ" },
+  { value: "area", label: "Dọn căn hộ theo diện tích", hint: "Studio, 1–3PN, Nhà phố" },
 ];
 
 // Dịch vụ bổ sung có phụ thu (fee = null: báo giá riêng / báo giá thêm trước khi làm)
@@ -329,7 +341,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "13-14",
     urgency: "urgent",
     addons: ["toilet", "rac", "ga"],
-    price: 320000,
+    price: 350000,
     cleaner: "Nguyễn Thị Lan",
     status: "on_the_way",
   },
@@ -396,7 +408,7 @@ export const sampleBookings: Booking[] = [
     timeSlot: "12-13",
     urgency: "urgent",
     addons: ["toilet", "rac", "ga", "san", "khan"],
-    price: 260000,
+    price: 290000,
     cleaner: "Phạm Thị Mai + 1",
     status: "accepted",
   },
@@ -445,8 +457,8 @@ export const sampleJobs: Job[] = [
     roomType: "standard",
     timeSlot: "13-14",
     distanceKm: 2.1,
-    earnMin: 250000,
-    earnMax: 250000,
+    earnMin: 264000,
+    earnMax: 264000,
     urgency: "urgent",
     requirements: [
       "Dọn 5 phòng tiêu chuẩn sau khi khách trả phòng",
@@ -463,8 +475,8 @@ export const sampleJobs: Job[] = [
     roomType: "standard",
     timeSlot: "12-13",
     distanceKm: 12.4,
-    earnMin: 200000,
-    earnMax: 200000,
+    earnMin: 211200,
+    earnMax: 211200,
     urgency: "normal",
     requirements: [
       "Dọn 4 phòng tiêu chuẩn",
@@ -481,8 +493,8 @@ export const sampleJobs: Job[] = [
     roomType: "kitchen",
     timeSlot: "11-12",
     distanceKm: 5.8,
-    earnMin: 200000,
-    earnMax: 200000,
+    earnMin: 211200,
+    earnMax: 211200,
     urgency: "normal",
     requirements: [
       "Dọn 2 phòng có bếp riêng",
