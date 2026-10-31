@@ -307,3 +307,23 @@ export function addonLabels(keys: string[]) {
     (k) => addonOptions.find((o) => o.value === k)?.label ?? EXTRA_OPTIONS.find((o) => o.value === k)?.label ?? k,
   );
 }
+
+
+/**
+ * Trả về số tiền phí nền tảng "CleanLink thu" của một đơn hàng theo bảng giá:
+ * - Phòng < 25m² (standard): 10.000đ/phòng
+ * - Phòng 25–40m² (large): 15.000đ/phòng
+ * - Phòng 40–60m² (family): 20.000đ/phòng
+ * - Phòng có bếp nhỏ (kitchen): 20.000đ/phòng
+ * - Dọn theo giờ / theo diện tích: trích đúng cột CleanLink thu tương ứng.
+ */
+export function platformFeeFromBooking(b: {
+  room_type?: string | null;
+  rooms?: number | null;
+  urgency?: string | null;
+  time_slot?: string | null;
+  addons?: string[] | null;
+  price?: number | null;
+}): number {
+  return cleanerPayoutFromBooking(b).platformFee;
+}

@@ -34,7 +34,12 @@ const more = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, profile, isAdmin } = useAuth();
+
+  const lastWord = profile?.full_name?.trim().split(/\s+/).slice(-1)[0] || "";
+  const displayName =
+    isAdmin || /^qu[aâ]n$/i.test(lastWord) ? "Admin" : lastWord || "Tài khoản";
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:px-6">
@@ -76,7 +81,7 @@ export function Header() {
             <Button asChild variant="outline" size="sm" className="rounded-full">
               <Link to="/tai-khoan">
                 <User className="h-4 w-4" />
-                {profile?.full_name?.split(" ").slice(-1)[0] || "Tài khoản"}
+                {displayName}
               </Link>
             </Button>
           ) : (
@@ -118,9 +123,10 @@ export function Header() {
               <Link
                 to="/tai-khoan"
                 onClick={() => setOpen(false)}
-                className="block px-3 py-2.5 rounded-md text-sm font-medium hover:bg-muted"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium hover:bg-muted"
               >
-                Tài khoản của tôi
+                <User className="h-4 w-4" />
+                {displayName}
               </Link>
             ) : (
               <Link
