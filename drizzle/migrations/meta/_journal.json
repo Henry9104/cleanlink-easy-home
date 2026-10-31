@@ -50,6 +50,13 @@
       "when": 1793099200000,
       "tag": "0006_booking_payment_status",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793421600000,
+      "tag": "0007_admin_full_crud_policies",
+      "breakpoints": true
     }
   ]
 }

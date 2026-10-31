@@ -46,11 +46,28 @@ export type BookingDraft = Omit<
 
 const DRAFT_KEY = "cleanlink:booking-draft";
 const CONFIRMED_PAYMENTS_KEY = "cleanlink:confirmed-payments";
+const ADMIN_CRUD_STORAGE_KEY = "cleanlink:admin-crud-v1";
 
 type LocalPaymentMeta = {
   paid_at: string;
   confirmed_by?: string | null;
 };
+
+type AdminBookingOverlaySlice = {
+  bookingPatches?: Record<string, Partial<BookingRow>>;
+  createdBookings?: Record<string, BookingRow>;
+  deletedBookingIds?: string[];
+};
+
+function readAdminBookingOverlay(): AdminBookingOverlaySlice {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(ADMIN_CRUD_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as AdminBookingOverlaySlice) : {};
+  } catch {
+    return {};
+  }
+}
 
 // Bộ nhớ đệm biên nhận thanh toán (đồng bộ từ cả localStorage và Supabase Storage)
 let memoryConfirmedIds = new Set<string>();
@@ -122,6 +139,9 @@ export function getPaymentStatus(
     id?: string;
   },
 ): PaymentStatus {
+  const adminPatch = b.id ? readAdminBookingOverlay().bookingPatches?.[b.id] : undefined;
+  if (adminPatch?.payment_status === PAYMENT_STATUS.PENDING) return PAYMENT_STATUS.PENDING;
+  if (adminPatch?.payment_status === PAYMENT_STATUS.PAID) return PAYMENT_STATUS.PAID;
   if (isConfirmedInCache(b.id)) return PAYMENT_STATUS.PAID;
   if (b.payment_status === PAYMENT_STATUS.PAID) return PAYMENT_STATUS.PAID;
   if (b.cleaner_id) return PAYMENT_STATUS.PAID;
@@ -142,38 +162,69 @@ export function getPaymentStatus(
 /**
  * Chuẩn hoá bản ghi đơn hàng:
  * - Tách bỏ thẻ nội bộ `__payment_pending__` khỏi `checklist_done`
- * - Đồng bộ `payment_status` và `status` theo đúng bước nghiệp vụ:
- *   + Chưa duyệt tiền → status = "pending" (PENDING_CONFIRMATION), payment_status = "pending"
- *   + Đã duyệt tiền & chưa có thợ nhận → status = "searching" (READY_FOR_PICKUP), payment_status = "paid"
+ * - Hợp nhất các chỉnh sửa của Admin (nếu có)
+ * - Đồng bộ `payment_status` và `status` theo đúng bước nghiệp vụ
  */
 export function normalizeBookingRow(row: BookingRow | null): BookingRow | null {
   if (!row) return null;
-  const local = readConfirmedMap()[row.id];
-  const paymentStatus = getPaymentStatus(row);
-  const cleanChecklist = (row.checklist_done ?? []).filter((x) => x !== PAYMENT_PENDING_TAG);
+  const overlay = readAdminBookingOverlay();
+  if ((overlay.deletedBookingIds ?? []).includes(row.id)) return null;
+  const adminPatch = overlay.bookingPatches?.[row.id];
+  const mergedRow: BookingRow = adminPatch ? { ...row, ...adminPatch } : row;
 
-  let effectiveStatus = row.status;
-  if (paymentStatus === PAYMENT_STATUS.PENDING && !row.cleaner_id && row.status !== "cancelled") {
+  const local = readConfirmedMap()[mergedRow.id];
+  const paymentStatus = getPaymentStatus(mergedRow);
+  const cleanChecklist = (mergedRow.checklist_done ?? []).filter((x) => x !== PAYMENT_PENDING_TAG);
+
+  let effectiveStatus = mergedRow.status;
+  if (
+    paymentStatus === PAYMENT_STATUS.PENDING &&
+    !mergedRow.cleaner_id &&
+    mergedRow.status !== "cancelled"
+  ) {
     effectiveStatus = ORDER_STATUS.PENDING_CONFIRMATION;
   } else if (
     paymentStatus === PAYMENT_STATUS.PAID &&
-    row.status === ORDER_STATUS.PENDING_CONFIRMATION
+    mergedRow.status === ORDER_STATUS.PENDING_CONFIRMATION
   ) {
     effectiveStatus = ORDER_STATUS.READY_FOR_PICKUP;
   }
 
   return {
-    ...row,
+    ...mergedRow,
     checklist_done: cleanChecklist,
     payment_status: paymentStatus,
-    paid_at: row.paid_at ?? local?.paid_at ?? null,
-    payment_confirmed_by: row.payment_confirmed_by ?? local?.confirmed_by ?? null,
+    paid_at: mergedRow.paid_at ?? local?.paid_at ?? null,
+    payment_confirmed_by: mergedRow.payment_confirmed_by ?? local?.confirmed_by ?? null,
     status: effectiveStatus,
   };
 }
 
 export function normalizeBookingRows(rows: BookingRow[]): BookingRow[] {
-  return rows.map((r) => normalizeBookingRow(r)!);
+  const overlay = readAdminBookingOverlay();
+  const deleted = new Set(overlay.deletedBookingIds ?? []);
+  const result: BookingRow[] = [];
+  const seen = new Set<string>();
+
+  for (const r of rows) {
+    if (deleted.has(r.id)) continue;
+    const normalized = normalizeBookingRow(r);
+    if (normalized) {
+      result.push(normalized);
+      seen.add(r.id);
+    }
+  }
+
+  for (const [id, created] of Object.entries(overlay.createdBookings ?? {})) {
+    if (deleted.has(id) || seen.has(id)) continue;
+    const normalized = normalizeBookingRow(created);
+    if (normalized) {
+      result.push(normalized);
+      seen.add(id);
+    }
+  }
+
+  return result.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
 }
 
 // Giữ alias tương thích ngược
@@ -321,7 +372,6 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
   const token = sessionData.session?.access_token;
   const adminUserId = sessionData.session?.user?.id ?? null;
 
-  // Ghi biên nhận vào Supabase Storage (mọi user authenticated đều đọc/ghi được theo policy 0003)
   const uploadReceipt = async () => {
     try {
       const blob = new Blob(
@@ -372,7 +422,6 @@ export async function confirmBookingPayment(bookingId: string): Promise<BookingR
     }
   }
 
-  // Fallback trực tiếp qua Supabase client của Admin
   await uploadReceipt();
   recordLocalPaymentConfirmation(bookingId, { paid_at: now, confirmed_by: adminUserId });
 
@@ -461,7 +510,10 @@ export async function fetchBooking(id: string) {
   if (data) {
     await ensureRlsCompatiblePendingRows([data as BookingRow]);
   }
-  return normalizeBookingRow(data as BookingRow | null);
+  const normalized = normalizeBookingRow(data as BookingRow | null);
+  if (normalized) return normalized;
+  const created = readAdminBookingOverlay().createdBookings?.[id] ?? null;
+  return normalizeBookingRow(created);
 }
 
 export async function fetchHostBookings(hostId: string) {
@@ -474,7 +526,7 @@ export async function fetchHostBookings(hostId: string) {
   if (error) throw error;
   const rawRows = (data ?? []) as BookingRow[];
   await ensureRlsCompatiblePendingRows(rawRows, hostId);
-  return normalizeBookingRows(rawRows);
+  return normalizeBookingRows(rawRows).filter((b) => b.host_id === hostId);
 }
 
 /**
@@ -514,7 +566,8 @@ export async function fetchAvailableOrders(area?: string): Promise<BookingRow[]>
             (b) =>
               !b.cleaner_id &&
               b.status === ORDER_STATUS.READY_FOR_PICKUP &&
-              getPaymentStatus(b) === PAYMENT_STATUS.PAID,
+              getPaymentStatus(b) === PAYMENT_STATUS.PAID &&
+              (!area || area === "all" || b.area === area),
           );
         }
       }
