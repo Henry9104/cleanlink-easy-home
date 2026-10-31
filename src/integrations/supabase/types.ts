@@ -21,6 +21,7 @@ export type Database = {
           address: string
           area: string
           checklist_done: string[]
+          cleaner_amount?: number | null
           cleaner_id: string | null
           cleaner_name: string | null
           code: string
@@ -37,6 +38,7 @@ export type Database = {
           photo_after: string | null
           photo_before: string | null
           photo_sent_at: string | null
+          platform_fee?: number | null
           price: number
           property_name: string
           property_type: string
@@ -54,6 +56,7 @@ export type Database = {
           address: string
           area?: string
           checklist_done?: string[]
+          cleaner_amount?: number | null
           cleaner_id?: string | null
           cleaner_name?: string | null
           code: string
@@ -70,6 +73,7 @@ export type Database = {
           photo_after?: string | null
           photo_before?: string | null
           photo_sent_at?: string | null
+          platform_fee?: number | null
           price?: number
           property_name: string
           property_type?: string
@@ -87,6 +91,7 @@ export type Database = {
           address?: string
           area?: string
           checklist_done?: string[]
+          cleaner_amount?: number | null
           cleaner_id?: string | null
           cleaner_name?: string | null
           code?: string
@@ -103,6 +108,7 @@ export type Database = {
           photo_after?: string | null
           photo_before?: string | null
           photo_sent_at?: string | null
+          platform_fee?: number | null
           price?: number
           property_name?: string
           property_type?: string

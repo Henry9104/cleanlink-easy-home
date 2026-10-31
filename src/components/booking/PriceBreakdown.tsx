@@ -3,7 +3,7 @@ import { formatVND } from "@/lib/cleanlink-data";
 import { CONTACT } from "@/lib/contact-info";
 import type { Estimate } from "@/lib/pricing";
 
-/** Chi tiết từng khoản + tổng tiền ước tính (cập nhật theo thời gian thực) */
+/** Chi tiết từng khoản + tổng tiền ước tính + phân tách 88% / 12% (cập nhật theo thời gian thực) */
 export function PriceBreakdown({ estimate }: { estimate: Estimate }) {
   return (
     <div className="space-y-3 text-sm">
@@ -12,7 +12,9 @@ export function PriceBreakdown({ estimate }: { estimate: Estimate }) {
           <li key={`${l.label}-${i}`} className="flex justify-between gap-3">
             <span className="text-muted-foreground">{l.label}</span>
             {l.amount === null ? (
-              <span className="shrink-0 text-right font-medium text-amber-700">{l.note ?? "Báo giá riêng"}</span>
+              <span className="shrink-0 text-right font-medium text-amber-700">
+                {l.note ?? "Báo giá riêng"}
+              </span>
             ) : (
               <span className="shrink-0 font-medium">{formatVND(l.amount)}</span>
             )}
@@ -21,10 +23,26 @@ export function PriceBreakdown({ estimate }: { estimate: Estimate }) {
       </ul>
 
       <div className="flex items-baseline justify-between gap-3 border-t border-border/60 pt-3">
-        <span className="font-medium">Tổng ước tính</span>
+        <span className="font-medium">Tổng tiền khách thanh toán</span>
         <span className="text-2xl font-bold text-primary">
-          {estimate.baseQuote ? "Liên hệ" : formatVND(estimate.total)}
+          {estimate.baseQuote ? "Liên hệ báo giá" : formatVND(estimate.total)}
         </span>
+      </div>
+
+      {/* Phân chia doanh thu 88% / 12% */}
+      <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2.5 text-xs space-y-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">Người dọn nhận (88%)</span>
+          <span className="font-semibold text-emerald-700">
+            {estimate.baseQuote ? "88% giá cuối" : formatVND(estimate.cleanerAmount)}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">CleanLink thu (12%)</span>
+          <span className="font-semibold text-primary">
+            {estimate.baseQuote ? "12% giá cuối" : formatVND(estimate.platformFee)}
+          </span>
+        </div>
       </div>
 
       {estimate.baseQuote ? (
@@ -40,10 +58,11 @@ export function PriceBreakdown({ estimate }: { estimate: Estimate }) {
         </div>
       ) : (
         estimate.hasQuote && (
-          <p className="text-xs text-amber-700">*Chưa bao gồm các mục cần khảo sát/báo giá riêng</p>
+          <p className="text-xs text-amber-700">
+            *Chưa bao gồm các mục cần khảo sát/báo giá riêng
+          </p>
         )
       )}
     </div>
   );
 }
-

@@ -6,6 +6,7 @@ import {
   type BookingStatus,
   type PaymentStatus,
 } from "@/lib/cleanlink-data";
+import { calculateRevenueSplit, type RevenueSplit } from "@/lib/pricing";
 
 export type BookingRow = Database["public"]["Tables"]["bookings"]["Row"];
 export type BookingInsert = Database["public"]["Tables"]["bookings"]["Insert"];
@@ -42,6 +43,12 @@ export type BookingDraft = Omit<
   "host_id" | "status" | "payment_method" | "payment_status" | "paid_at" | "payment_confirmed_by"
 > & {
   price: number;
+  /** Số tiền Người dọn nhận (88%) */
+  cleaner_amount?: number;
+  /** Số tiền CleanLink thu (12%) */
+  platform_fee?: number;
+  /** Cấu trúc phân tách doanh thu (Khách trả, Thợ nhận 88%, CleanLink 12%) */
+  revenue_split?: RevenueSplit;
 };
 
 const DRAFT_KEY = "cleanlink:booking-draft";
@@ -163,7 +170,7 @@ export function getPaymentStatus(
  * Chuẩn hoá bản ghi đơn hàng:
  * - Tách bỏ thẻ nội bộ `__payment_pending__` khỏi `checklist_done`
  * - Hợp nhất các chỉnh sửa của Admin (nếu có)
- * - Đồng bộ `payment_status` và `status` theo đúng bước nghiệp vụ
+ * - Đồng bộ `payment_status`, `status` và phân tách `cleaner_amount` (88%) / `platform_fee` (12%)
  */
 export function normalizeBookingRow(row: BookingRow | null): BookingRow | null {
   if (!row) return null;
@@ -190,6 +197,8 @@ export function normalizeBookingRow(row: BookingRow | null): BookingRow | null {
     effectiveStatus = ORDER_STATUS.READY_FOR_PICKUP;
   }
 
+  const split = calculateRevenueSplit(mergedRow.price ?? 0);
+
   return {
     ...mergedRow,
     checklist_done: cleanChecklist,
@@ -197,6 +206,14 @@ export function normalizeBookingRow(row: BookingRow | null): BookingRow | null {
     paid_at: mergedRow.paid_at ?? local?.paid_at ?? null,
     payment_confirmed_by: mergedRow.payment_confirmed_by ?? local?.confirmed_by ?? null,
     status: effectiveStatus,
+    cleaner_amount:
+      typeof mergedRow.cleaner_amount === "number" && mergedRow.cleaner_amount > 0
+        ? mergedRow.cleaner_amount
+        : split.cleanerAmount,
+    platform_fee:
+      typeof mergedRow.platform_fee === "number" && mergedRow.platform_fee > 0
+        ? mergedRow.platform_fee
+        : split.platformFee,
   };
 }
 
@@ -255,13 +272,29 @@ function isDuplicateCodeError(err: unknown): boolean {
 }
 
 export function saveBookingDraft(draft: BookingDraft) {
-  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  const split = calculateRevenueSplit(draft.price ?? 0);
+  const enrichedDraft: BookingDraft = {
+    ...draft,
+    price: split.customerTotal,
+    cleaner_amount: draft.cleaner_amount ?? split.cleanerAmount,
+    platform_fee: draft.platform_fee ?? split.platformFee,
+    revenue_split: draft.revenue_split ?? split,
+  };
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(enrichedDraft));
 }
 
 export function loadBookingDraft(): BookingDraft | null {
   try {
     const raw = sessionStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as BookingDraft) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as BookingDraft;
+    const split = calculateRevenueSplit(parsed.price ?? 0);
+    return {
+      ...parsed,
+      cleaner_amount: parsed.cleaner_amount ?? split.cleanerAmount,
+      platform_fee: parsed.platform_fee ?? split.platformFee,
+      revenue_split: parsed.revenue_split ?? split,
+    };
   } catch {
     return null;
   }
@@ -278,16 +311,18 @@ export function buildTransferContent(phone: string, code: string) {
 
 /**
  * Lưu đơn đặt dọn phòng khi khách bấm "Tôi đã chuyển khoản" ở trang /thanh-toan:
- * - Nếu DB đã có cột `payment_status` (migration 0006): lưu `status = "pending"`, `payment_status = "pending"`.
- * - Nếu DB từ xa chưa chạy migration 0006: lưu `status = "searching"` kèm `checklist_done = ["__payment_pending__"]`
- *   để RLS của Người dọn (0002) cho phép truy vấn/nhận việc ngay sau khi Admin duyệt tiền, trong khi
- *   trước lúc duyệt tiền đơn vẫn hiển thị là "Chờ duyệt tiền" và hoàn toàn ẩn khỏi màn hình Người dọn.
+ * - Gửi kèm cấu trúc phân tách doanh thu (`price`, `cleaner_amount` 88%, `platform_fee` 12%).
+ * - Nếu DB đã có cột `cleaner_amount`/`platform_fee` và `payment_status`: lưu đầy đủ.
+ * - Nếu DB từ xa chưa chạy migration 0008 hoặc 0006: tự động fallback tương thích để đảm bảo lưu đơn thành công 100%.
  */
 export async function createBookingFromDraft(
   draft: BookingDraft,
   hostId: string,
 ): Promise<{ id: string; code: string }> {
   let code = draft.code || newBookingCode();
+  const split = draft.revenue_split ?? calculateRevenueSplit(draft.price ?? 0);
+  const cleanerAmount = draft.cleaner_amount ?? split.cleanerAmount;
+  const platformFee = draft.platform_fee ?? split.platformFee;
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const basePayload = {
@@ -305,11 +340,13 @@ export async function createBookingFromDraft(
       urgency: draft.urgency ?? "normal",
       addons: draft.addons ?? [],
       note: draft.note ?? null,
-      price: draft.price ?? 0,
+      price: split.customerTotal,
     };
 
     const fullPayload = {
       ...basePayload,
+      cleaner_amount: cleanerAmount,
+      platform_fee: platformFee,
       status: ORDER_STATUS.PENDING_CONFIRMATION,
       payment_method: PAYMENT_METHOD,
       payment_status: PAYMENT_STATUS.PENDING,
@@ -331,6 +368,27 @@ export async function createBookingFromDraft(
     }
 
     if (isMissingColumnError(error)) {
+      // Thử lưu với migration 0006 (có payment_status nhưng chưa có cleaner_amount/platform_fee)
+      const { data: v6Data, error: v6Error } = await supabase
+        .from("bookings")
+        .insert({
+          ...basePayload,
+          status: ORDER_STATUS.PENDING_CONFIRMATION,
+          payment_method: PAYMENT_METHOD,
+          payment_status: PAYMENT_STATUS.PENDING,
+        })
+        .select("id, code")
+        .single();
+
+      if (!v6Error && v6Data) {
+        return v6Data;
+      }
+
+      if (isDuplicateCodeError(v6Error)) {
+        code = newBookingCode();
+        continue;
+      }
+
       // Fallback tương thích RLS 0002: lưu status = "searching" + cờ "__payment_pending__" trong checklist_done
       const { data: fallbackData, error: fallbackError } = await supabase
         .from("bookings")
